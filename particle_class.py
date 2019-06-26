@@ -18,14 +18,14 @@ class particle:
     def __init__(self, bbox,img):
       self.bbox = bbox
       self.img = img
-      self.position_x = [0, 0, 0, 0]
-      self.position_y = [0, 0, 0, 0]
+      self.position_x = [-100,-100,-100, -100]
+      self.position_y = [-100,-100,-100, -100]
       self.frame= [0, 0, 0, 0]
       self.frame_fl= [0, 0]
       self.speed = [0, 0]
       self.appear = 5
       self.img_fl = np.zeros((particle.FL_SIZE,particle.FL_SIZE)) 
-      self.img_fl=np.append(self.img_fl, self.img_fl, axis = 0)
+      self.img_fl= np.append(self.img_fl, self.img_fl, axis = 0)
       self.position_prediction = [-1,-1]
       self.kalman_ok= 0
       self.kalman_init_num= 3
@@ -40,12 +40,22 @@ class particle:
       #save index of hog detector
       self.index_t2h = -1
       self.index_k2h = -1
-      
-      self.type = 0
+      self.case=0
+      self.type = 'unknown'
+      self.PN = 0
       #0 is unknow 
       #1 is beam
       #2 is algae
-    
+      
+      
+    def assign_PN (self,num):
+        if self.PN == 0:
+            self.PN = num
+            return 1
+        else :
+            return 0
+        
+        
     def tracker_create(self):
         self.tracker = cv2.TrackerCSRT_create()
 #if tracker_type == 'BOOSTING':
@@ -68,17 +78,34 @@ class particle:
     # current positon and position in the previous frames are saved
     # save the current position in the list: position_x and  position_y
     # save the current frame number in the list: frame
+    #input: 'frame_num' is number of current frame. 'bbox' is 4 point that refers a square that inclose object.  
     def get_save_position(self, frame_num, bbox):
-        self.position_x.append(int (bbox[0] + bbox[2]/2))
-        self.position_y.append(int (bbox[1] + bbox[3]/2))
+        #when current frame is saved more than two times
+        if frame_num== self.frame[-1]:
+            self.position_x[-1] = int (bbox[0] + bbox[2]/2)
+            self.position_y[-1] = int (bbox[1] + bbox[3]/2)
+        # when current frame is saved for first time
+        else:
+            self.position_x.append(int (bbox[0] + bbox[2]/2))
+            self.position_y.append(int (bbox[1] + bbox[3]/2))
+            self.frame.append(frame_num)       
+            del self.position_x[0]
+            del self.position_y[0]
+            del self.frame[0]
+        # update bbox saved in this class    
+        self.bbox = bbox
+    
+    # save position 
+    def save_position(self,frame_num, point):
+        self.position_x.append(int (point[0]))
+        self.position_y.append(int (point[1]))
         self.frame.append(frame_num)       
         del self.position_x[0]
         del self.position_y[0]
         del self.frame[0]
-        self.bbox = bbox
         
     
-            
+    # save fluorescent images
     def save_fl_img(self,fl_frame_num,fl_img):
         self.img_fl=np.append(self.img_fl, fl_img, axis = 0)
         self.frame_fl.append(fl_frame_num)
@@ -86,14 +113,15 @@ class particle:
             self.img_fl = np.delete(self.img_fl, list(range(0, 100)), 0) 
             del self.frame_fl[0]
 #        print(self.img_fl.shape)
-        
+    
+    # report missing of object
     def report_missing(self):
          self.appear = self.appear-1
          if self.appear < 0:
              self.appear = 0
              self.speed[0]=0
              self.speed[1]=0
-             
+    # report that object is found       
     def report_found(self):
          self.appear = self.appear+1
          if self.appear > 10:
@@ -147,7 +175,7 @@ class particle:
     
 
     def check_algae(self):
-        if len(self.frame_fl) > particle.MAX_fl_img:
+        if self.frame_fl[0] > 0:
             #get the binary mask of first frame
             particle.mask=self.img_fl[1*particle.FL_SIZE:2*particle.FL_SIZE,:]
             ret, particle.mask = cv2.threshold(particle.mask, 30, 255, cv2.THRESH_BINARY)
@@ -155,14 +183,16 @@ class particle:
                 #extract square frame
                 particle.tem=self.img_fl[(i+2)*particle.FL_SIZE:(i+3)*particle.FL_SIZE,:]
                 #get binary mask of this frame
-                ret, particle.tem = cv2.threshold(particle.tem, 30, 255, cv2.THRESH_BINARY)
+                ret, particle.tem = cv2.threshold(particle.tem, 40, 255, cv2.THRESH_BINARY)
                 #update the mask using “AND”
                 particle.mask = cv2.bitwise_and(particle.mask,particle.tem)
-                
+
             if sum(sum(particle.mask))>15*255:
-                self.type=2
+                self.type='algae'
             else:
-                self.type=1
+                self.type='PS_bead'
+            
+        return self.type
                 
     def init_kalman(self):
         # if this particles has been detected and tracted for a few frames
@@ -177,17 +207,32 @@ class particle:
             #设置转移矩阵
             self.kalman.transitionMatrix = np.array([[1,0,1,0],[0,1,0,1],[0,0,1,0],[0,0,0,1]],np.float32)
             #设置过程噪声协方差矩阵
-            self.kalman.processNoiseCov = np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],np.float32)*0.05
+            self.kalman.processNoiseCov = np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],np.float32)*0.003
             #set init position and speed
             self.kalman.statePre=np.array([[self.position_x[-1]],[self.position_y[-1]],[self.speed[0]],[self.speed[1]]],np.float32)
             #correct kalman filter
             self.kalman.correct(np.array([[self.position_x[-1]],[self.position_y[-1]]],np.float32))
             #set flag 
             self.kalman_ok = 1 
-        
+    
+    #save position and speed prediction. Input is kalman result    
     def save_prediction(self, prediction):
         self.position_prediction[0] =  prediction[0][0]
         self.position_prediction[1] =  prediction[1][0]
         self.speed[0] =  prediction[2][0]
         self.speed[1] =  prediction[3][0]
-        
+    
+    #update tracking 
+    #input: 'img_gray' is a gray image. 'frame_num' is num of current frame 
+    def tracker_update(self, img_gray,frame_num):
+        ok, bbox = self.tracker.update(img_gray)#update tracker
+        self.get_save_position(frame_num, bbox)
+        # if tracking is not ok, set tracking result as negetive. As a result, tracking is regard to be failed in the following precessing.         
+        if not ok:
+            self.bbox=(-100,-100,-100,-100)
+            self.get_save_position(frame_num, self.bbox)            
+        # if speed is abnormal, set tracking result as negetive. As a result, tracking is regard to be failed in the following precessing. 
+        if self.frame[-2]>0:
+            if abs(self.position_x[-1]-self.position_x[-2])>20 or self.position_y[-1]-self.position_y[-2] < -10:
+                self.bbox=(-100,-100,-100,-100)
+                self.get_save_position(frame_num, self.bbox)
