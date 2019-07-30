@@ -10,7 +10,7 @@ import dlib
 import numpy as np
 import glob
 import os
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import copy
 import math
 
