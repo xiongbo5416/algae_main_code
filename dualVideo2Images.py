@@ -49,10 +49,12 @@ videoname = filedialog.askopenfilename()
 print(videoname)
 
 print('select a flourescent video')
+print('if donnot process fluorescent video, click cancel')
 videoname2 = filedialog.askopenfilename()
 print(videoname2)
 
 print('select a folder to save frame')
+print('if donnot save frames, click cancel')
 foldername = filedialog.askdirectory()
 print(foldername)
 
@@ -69,7 +71,7 @@ bgd_frame=bgd_frame*0
 
 #######################parameter init
 #Moving average used to got bgd. N_MOVING is a how many frames used in moving average.
-N_MOVING=3
+N_MOVING=40
 bgd=np.zeros((ROL_NUM,COL_NUM,N_MOVING))
 #bgd=bgd.astype(float)
 threshold_ex = 0 #set it to 0 when want to decide it 
@@ -87,22 +89,24 @@ CONTRAST_EH=2
 FL_EH=5
 NUM_COMP=13 #since lensfree images and fluorescent images are not start at same time. A compenstion is required.
 #creat a list to record the frame No. that is the first frame in each lasers toggle period
-list_period = np.zeros(100,dtype=np.int32)
+MAX_PERIOD=10000 #this define the quatity of red laser burst
+list_period = np.zeros(MAX_PERIOD,dtype=np.int32)
 #record how many frames in the period
-lensfr_period = np.zeros(100,dtype=np.int32)
-fl_period = np.zeros(100,dtype=np.int32)
+lensfr_period = np.zeros(MAX_PERIOD,dtype=np.int32)
+fl_period = np.zeros(MAX_PERIOD,dtype=np.int32)
 
 
 fgbg = cv2.createBackgroundSubtractorMOG2()
 
 ##################################deal with lens free images
-while period_num<100:
+while period_num<MAX_PERIOD:
     ret, frame = cap.read()
     if frame is None:
         break  
         print('lensfree video done')
     print(str(current_frame) + ',' , end =" ")
     
+    #frame = cv2.GaussianBlur(frame,(3,3),0)
     #create a small frame for display
     frame_s=cv2.resize(frame,(500,500))
     gray_s = cv2.cvtColor(frame_s, cv2.COLOR_BGR2GRAY)
@@ -113,9 +117,9 @@ while period_num<100:
     green = np.array(frame[:, :, 1])
     blue_float=blue.astype(float)
     
-    #obtain gray images
-    grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    
+    #obtain gray images with green channel
+    #grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    grey = green
 #    show images
     cv2.imshow('grey',gray_s)
     
@@ -129,7 +133,7 @@ while period_num<100:
     grey_profile=grey_profile/COL_NUM
 
     #red laser is off
-    if  max(blue_profile)>200 or min(grey_profile)<10:
+    if  max(grey_profile)>254:
         RedOrNot=0
     
     # red laser just turn on. the first frame in this cycle
@@ -146,8 +150,9 @@ while period_num<100:
         gray_dif = grey_float - bgd_frame +128#get difference between presented and previous frames
         gray_dif=cv2.multiply(gray_dif-128+int(128/CONTRAST_EH),CONTRAST_EH)#enhacne contrast of gray images
         #save frames
-        name= foldername +'/' +str(current_frame+1000) +'.jpg'
-        cv2.imwrite(name,gray_dif)
+        if len(foldername)>0:
+            name= foldername +'/' +str(current_frame+1000) +'.jpg'
+            cv2.imwrite(name,gray_dif)
 
         
         
@@ -174,13 +179,14 @@ while period_num<100:
         gray_dif = grey_float - bgd_frame +128#get difference between presented and previous frames
         gray_dif=cv2.multiply(gray_dif-128+int(128/CONTRAST_EH),CONTRAST_EH)#enhacne contrast of gray images
         #save frames
-        name= foldername +'/' +str(current_frame+1000) +'.jpg'
-        cv2.imwrite(name,gray_dif)
+        if len(foldername)>0:
+            name= foldername +'/' +str(current_frame+1000) +'.jpg'
+            cv2.imwrite(name,gray_dif)
 
 
         #record num of frames in this period
         lensfr_period[period_num-1]=current_frame+1000
-        #print(max(blue_profile))    
+        #print(np.mean(grey_profile))    
         
 #        fgmask = fgbg.apply(grey)
 #        cv2.imshow('fb',fgmask)
@@ -204,6 +210,7 @@ period_num=0
 if len(videoname2) >0:
     #read onet frame to select high light area when threshold_ex=0
     #open a frame when excitation light is on
+    print("select a FL frame when red excitation is on, this frame shall be used to distinguish frames with/without red excitation")
     filename = filedialog.askopenfilename() # show an "Open" dialog box and return the path to the selected file
     print(filename + ':', end =" ")
     img = cv2.imread(filename)
@@ -245,8 +252,7 @@ if len(videoname2) >0:
         else:
            excitation_st = excitation_st+1
            if excitation_st>2:
-               #save frames
-               name= foldername +'/' + str(list_period[period_num-1]+excitation_st-3+NUM_COMP) +'.jpg'
+
                #alighn scatteing/fl images to lensfree images
                gray_reg= alighment(COL_NUM, ROL_NUM, gray_1)
                
@@ -280,8 +286,12 @@ if len(videoname2) >0:
     #            #write note
     #           font = cv2.FONT_HERSHEY_SIMPLEX
     #           cv2.putText(fg_gray_reg,'blue laser on',(50,150), font, 4, (255), 4, cv2.LINE_AA)
-            
-               cv2.imwrite(name,fg_gray_reg) 
+               
+                #save frames
+               if len(foldername)>0:
+                   name= foldername +'/' + str(list_period[period_num-1]+excitation_st-3+NUM_COMP) +'.jpg'
+                   cv2.imwrite(name,fg_gray_reg) 
+                   
                #record num of frames in this period
                fl_period[period_num-1]=list_period[period_num-1]+excitation_st-3+NUM_COMP
                #cv2.imwrite(name,cv2.multiply(gray_1,4)) 
