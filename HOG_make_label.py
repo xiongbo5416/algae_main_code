@@ -5,19 +5,16 @@ Created on Tue Aug 27 22:43:20 2019
 @author: xiong
 """
 import cv2
-import sys
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
-import glob
-import os
-import copy
+
 
 def get_hog() : 
-    winSize = (20,20)
-    blockSize = (20,20)
-    blockStride = (10,10)
-    cellSize = (20,20)
+    winSize = (WIDE_WINDOW,HEIGHT_WINDOW)
+    blockSize = (STRIDE_WINDOW,STRIDE_WINDOW)
+    blockStride = (STRIDE_WINDOW,STRIDE_WINDOW)
+    cellSize = (STRIDE_WINDOW,STRIDE_WINDOW)
     nbins = 9
     derivAperture = 1
     winSigma = -1.
@@ -30,30 +27,33 @@ def get_hog() :
     hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma,histogramNormType,L2HysThreshold,gammaCorrection,nlevels, signedGradient)
 
     return hog
-    affine_flags = cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR
+#    affine_flags = cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR
     
 
 
 root = tk.Tk()
 root.withdraw()
 
-STRIDE_WINDOW=10
-WIDE_WINDOW=3*20
-HEIGHT_WINDOW=5*20
+STRIDE_WINDOW=8
+WIDE_WINDOW=4*16
+HEIGHT_WINDOW=6*16
 num_w_wide=int((1640-WIDE_WINDOW)/STRIDE_WINDOW+1)
 num_w_height=int((1232-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
 windows_A=np.zeros((num_w_height,num_w_wide,HEIGHT_WINDOW,WIDE_WINDOW),dtype=np.uint8)
-windows_label=np.zeros((num_w_height+10,num_w_wide+10),dtype=np.uint8)
-
+windows_label=np.random.rand(num_w_height+10,num_w_wide+10)
+#windows_label=windows_label+0.9
+windows_label=windows_label.astype(np.uint8)
 
 
 fig_path = filedialog.askopenfilename()
 img=cv2.imread(fig_path)
 img=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
+
 #show image
-cv2.namedWindow("output", cv2.WINDOW_NORMAL) 
-cv2.imshow('output',img)
+cv2.namedWindow("please read console", cv2.WINDOW_NORMAL) 
+cv2.imshow('please read console',img)
+#find out how many particles and non-articles in this image, and press any key
 cv2.waitKey(0)
 num_particles = input ("Enter number of particles")
 num_particles = int(num_particles)
@@ -64,6 +64,7 @@ cv2.destroyAllWindows()
 for i in range(num_w_height):
     for j in range(num_w_wide):
         windows_A[i,j,:,:]=img[i*STRIDE_WINDOW:i*STRIDE_WINDOW+HEIGHT_WINDOW,j*STRIDE_WINDOW:j*STRIDE_WINDOW+WIDE_WINDOW]
+
 
 #select particles
 for i in range(num_particles):
@@ -78,8 +79,8 @@ for i in range(num_particles):
     temp_w=int((bbox[0]+bbox[2]/2-WIDE_WINDOW/2)/STRIDE_WINDOW)
     
     #set unknown
-    for h_i in range(max([0,temp_h-3]),min([num_w_height,temp_h+5])):
-        for w_i in range(max([0,temp_w-3]),min([num_w_wide,temp_w+5])):
+    for h_i in range(max([0,temp_h-2]),min([num_w_height,temp_h+4])):
+        for w_i in range(max([0,temp_w-1]),min([num_w_wide,temp_w+3])):
             windows_label[h_i,w_i] = 1
 
     #set 1
@@ -90,9 +91,9 @@ for i in range(num_particles):
     
                 
 #    cv2.imshow('1',windows_A[temp_h,temp_w,:,:])
-#    cv2.imshow('2',windows_A[temp_h,temp_w+1,:,:])
-#    cv2.imshow('3',windows_A[temp_h+4,temp_w-3,:,:])
-#    cv2.imshow('4',windows_A[temp_h-3,temp_w+4,:,:])
+#    cv2.imshow('2',windows_A[temp_h+1,temp_w+1,:,:])
+#    cv2.imshow('3',windows_A[temp_h,temp_w-2,:,:])
+#    cv2.imshow('4',windows_A[temp_h-4,temp_w,:,:])
 #    cv2.waitKey(0)
 #    cv2.destroyAllWindows()
     #cv2.imwrite(fig_path +'_cut.jpg',img_cut) 
@@ -110,7 +111,7 @@ for i in range(num_unknown):
     temp_w=int((bbox[0]+bbox[2]/2-WIDE_WINDOW/2)/STRIDE_WINDOW)
     
     #set unknown
-    for h_i in range(max([0,temp_h-1]),min([num_w_height,temp_h+3])):
+    for h_i in range(max([0,temp_h-2]),min([num_w_height,temp_h+4])):
         for w_i in range(max([0,temp_w-1]),min([num_w_wide,temp_w+3])):
             windows_label[h_i,w_i] = 1
 

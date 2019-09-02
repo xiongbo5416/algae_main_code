@@ -14,10 +14,10 @@ import os
 import copy
 
 def get_hog() : 
-    winSize = (20,20)
-    blockSize = (20,20)
-    blockStride = (10,10)
-    cellSize = (20,20)
+    winSize = (WIDE_WINDOW,HEIGHT_WINDOW)
+    blockSize = (STRIDE_WINDOW,STRIDE_WINDOW)
+    blockStride = (STRIDE_WINDOW,STRIDE_WINDOW)
+    cellSize = (STRIDE_WINDOW,STRIDE_WINDOW)
     nbins = 9
     derivAperture = 1
     winSigma = -1.
@@ -32,7 +32,7 @@ def get_hog() :
     return hog
     affine_flags = cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR
     
-def svmInit(C=10, gamma=0.50625):
+def svmInit(C=5, gamma=0.50625):
   model = cv2.ml.SVM_create()
   model.setGamma(gamma)
   model.setC(C)
@@ -52,12 +52,12 @@ def svmPredict(model, samples):
 root = tk.Tk()
 root.withdraw()
 
-STRIDE_WINDOW=10
-WIDE_WINDOW=3*20
-HEIGHT_WINDOW=5*20
-num_w_wide=int((1640-WIDE_WINDOW)/STRIDE_WINDOW+1)
-num_w_height=int((1232-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
-windows_A=np.zeros((num_w_height,num_w_wide,HEIGHT_WINDOW,WIDE_WINDOW),dtype=np.uint8)
+STRIDE_WINDOW=16
+WIDE_WINDOW=4*16
+HEIGHT_WINDOW=6*16
+#num_w_wide=int((1640-WIDE_WINDOW)/STRIDE_WINDOW+1)
+#num_w_height=int((1232-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
+#windows_A=np.zeros((num_w_height,num_w_wide,HEIGHT_WINDOW,WIDE_WINDOW),dtype=np.uint8)
 #windows_label=np.zeros((num_w_height+10,num_w_wide+10),dtype=np.uint8)
 
 
@@ -68,7 +68,7 @@ model = svmInit()
 hog_descriptors = []
 labels_train=[]
 
-for fig_i in range(9):
+for fig_i in range(1):
     fig_path = filedialog.askopenfilename()
     img=cv2.imread(fig_path)
     img=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -80,22 +80,25 @@ for fig_i in range(9):
     windows_label=windows_label/100
     windows_label=windows_label.astype(int)
     
-    for i in range(num_w_height):
-        for j in range(num_w_wide):
-            windows_A[i,j,:,:]=img[i*STRIDE_WINDOW:i*STRIDE_WINDOW+HEIGHT_WINDOW,j*STRIDE_WINDOW:j*STRIDE_WINDOW+WIDE_WINDOW]
+    hog_descriptors = []
+    train_label_0 = []
+    train_label_1 = []
+    location_0 = list()
+    location_1 = list()
     
-    for i in range(num_w_height):
-        for j in range(num_w_wide):
-            if windows_label[i,j]==0:
-                descriptor = hog.compute(windows_A[i,j,:,:])
-                if sum(descriptor)>0:
-                    hog_descriptors.append(descriptor)
-                    labels_train.append(0)
-            if windows_label[i,j]==2:
-                descriptor = hog.compute(windows_A[i,j,:,:])
-                hog_descriptors.append(descriptor)
-                labels_train.append(1)
-                
+    height=len(img)
+    width=len(img[0,:])
+    for i in range (0,width-WIDE_WINDOW):
+        for j in range (0,height-HEIGHT_WINDOW):
+            #print(i)
+            if windows_label[j,i]==0:
+                location_0.append((i,j))
+                train_label_0.append(0)
+            if windows_label[j,i]==2:
+                location_1.append((i,j))
+                train_label_1.append(1)          
+
+#descriptor = hog.compute(img,(16,16),(0,0),location_0)                  
     
 #cv2.namedWindow("output", cv2.WINDOW_NORMAL)
 #cv2.imshow('output',windows_A[56,30,:,:])
@@ -103,9 +106,9 @@ for fig_i in range(9):
 #cv2.destroyAllWindows()
 
 
-hog_descriptors = np.squeeze(hog_descriptors)
-labels_train = np.squeeze(labels_train)
-svmTrain(model, hog_descriptors, labels_train)
-model.save("svm_model.xml")
+#hog_descriptors = np.squeeze(hog_descriptors)
+#labels_train = np.squeeze(labels_train)
+#svmTrain(model, hog_descriptors, labels_train)
+#model.save("svm_model.xml")
 
 #predictions = svmPredict(model, hog_descriptors)

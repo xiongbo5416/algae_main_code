@@ -11,10 +11,10 @@ from tkinter import filedialog
 
 
 def get_hog() : 
-    winSize = (20,20)
-    blockSize = (20,20)
-    blockStride = (10,10)
-    cellSize = (20,20)
+    winSize = (16,16)
+    blockSize = (16,16)
+    blockStride = (8,8)
+    cellSize = (8,8)
     nbins = 9
     derivAperture = 1
     winSigma = -1.
@@ -27,12 +27,12 @@ def get_hog() :
     hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma,histogramNormType,L2HysThreshold,gammaCorrection,nlevels, signedGradient)
 
     return hog
-    affine_flags = cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR
+#    affine_flags = cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR
     
 def svmPredict(model, samples):
   return model.predict(samples)[1].ravel()
 
-def svmInit(C=12.5, gamma=0.50625):
+def svmInit(C=5, gamma=0.50625):
   model = cv2.ml.SVM_create()
   model.setGamma(gamma)
   model.setC(C)
@@ -72,9 +72,9 @@ def draw_bbox (img, bbox, color, thickness):
 root = tk.Tk()
 root.withdraw()
 
-STRIDE_WINDOW=10
-WIDE_WINDOW=3*20
-HEIGHT_WINDOW=5*20
+STRIDE_WINDOW=16
+WIDE_WINDOW=4*16
+HEIGHT_WINDOW=6*16
 num_w_wide=int((1640-WIDE_WINDOW)/STRIDE_WINDOW+1)
 num_w_height=int((1232-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
 windows_A=np.zeros((num_w_height,num_w_wide,HEIGHT_WINDOW,WIDE_WINDOW),dtype=np.uint8)
@@ -127,3 +127,7 @@ cv2.namedWindow("img", cv2.WINDOW_NORMAL)
 cv2.imshow('img',img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
+
+for bbox in contour_list:
+    print(bbox)
