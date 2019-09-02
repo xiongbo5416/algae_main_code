@@ -275,7 +275,8 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
         [detection_x,detection_y]=bbox2point(bbox)
         bbox = (int(detection_x*STRIDE_WINDOW),int(detection_y*STRIDE_WINDOW),WIDE_WINDOW,HEIGHT_WINDOW)
         contour_list.append(bbox)
-        draw_bbox (img_gray, bbox, 255)
+        #draw hog detection
+        #draw_bbox (img_gray, bbox, 255)
     hog_fake=np.zeros(len(contour_list),int)
             
             
@@ -288,7 +289,8 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
         save bbox in the class article
         '''
         particle_List[j].tracker_update(img_gray,frame_num)#update tracker
-        draw_bbox (img_gray, particle_List[j].bbox, 0)
+        #draw tracking bbox
+       # draw_bbox (img_gray, particle_List[j].bbox, 0)
         #cv2.putText(img_gray, str(j),tuple([particle_List[j].position_x[-1],particle_List[j].position_y[-1]]), font, 1, (255), 1, cv2.LINE_AA)
     # remove the bad tracking.     
     # if movement is more than thorshold, set positon to -100,-100,
@@ -328,7 +330,9 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
             y_track=particle_List[j].position_y[-1]
             #save distance in matrix
             cost_matrix[i,j]=(x_det-x_track)**2+(y_det-y_track)**2
-            
+    
+    
+    
     #get cost_matrix using prediction
     cost_matrix_predict = np.zeros((len(contours),num_particle))+10000
     for j in range(num_particle):
@@ -342,40 +346,97 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
                 #save distance in matrix
                 cost_matrix_predict[i,j]=(x_det-x_prediction)**2+(y_det-y_prediction)**2
                 
-    #to fix the bug that two detections merge to one detection
-    #use cost_matrix_predict to find overlapped detection 
-    temp_j= -1
-    if num_particle>1:
+                
+#  get indexs for pair with 1 proity 
+    if len(contours)>0 and num_particle>0:
+        hog2track=np.zeros(len(contours),int)-1
+        hog2predict=np.zeros(len(contours),int)-1
+        track2hog=np.zeros(num_particle,int)-1
+        predict2hog=np.zeros(num_particle,int)-1
+        #print(num_particle)
+        #print(predict2hog)
+        for j in range(num_particle):
+            minElement = np.amin(cost_matrix[:,j])
+            if minElement < CostOfNonAssignment:
+                track2hog[j] = np.where(cost_matrix[:,j] == minElement)[0][0]
+            minElement = np.amin(cost_matrix_predict[:,j])
+            if minElement < CostOfNonAssignment:
+                predict2hog[j] = np.where(cost_matrix_predict[:,j] == minElement)[0][0] 
+            
         for i in range(len(contours)):
-            for j in range(num_particle):
-                if cost_matrix[i,j] < CostOfNonAssignment:
-                    hog_fake[i]=hog_fake[i]+1
-            if hog_fake[i] > 1:
-                cost_matrix[i,:]=cost_matrix[i,:]*0+10000
-                cost_matrix_predict[i,:]=cost_matrix_predict[i,:]*0+10000
-            else:
-                hog_fake[i]=0
-                    
-        #use cost_matrix_predict to find overlapped detection 
+            minElement = np.amin(cost_matrix[i,:])
+            if minElement < CostOfNonAssignment:
+                hog2track[i] = np.where(cost_matrix[i,:] == minElement)[0][0] 
+            minElement = np.amin(cost_matrix_predict[i,:])
+            if minElement < CostOfNonAssignment:
+                hog2predict[i] = np.where(cost_matrix_predict[i,:] == minElement)[0][0] 
+          
+        #find overlap hog and label fake this hog detection using prediction
         for i in range(len(contours)):
-            for j in range(num_particle):
-                if cost_matrix_predict[i,j] < CostOfNonAssignment:
-                    hog_fake[i]=hog_fake[i]+1
-            if hog_fake[i]>1:
-                cost_matrix[i,:]=cost_matrix[i,:]*0+10000
-                cost_matrix_predict[i,:]=cost_matrix_predict[i,:]*0+10000
-            else:
-                hog_fake[i]=0
+            temp = np.where(predict2hog==i)
+            if len(temp[0]) > 1:
+                #release predict pair
+                predict2hog[temp[0]]=-2
+                #report fake hog
+                hog2predict[i]=-2
+                #print('!!')
+                hog_fake[i]=1
+                
+        #find overlap hog and label fake this hog detection using tracking
+        for i in range(len(contours)):
+            temp = np.where(track2hog==i)
+            if len(temp[0]) > 1:
+                #release predict pair
+                track2hog[temp[0]]=-2
+                #report fake hog
+                hog2track[i]=-2
+                hog_fake[i]=1
+
+        #to fix the bug that two detections merge to one detection
+        #del fake hog and set relavant particle to unknow,disable tracking results
+        i_del=0
+        for i in range(len(contours)):
+            if hog_fake[i] > 0:
+#                hog_fake[i] = 0
+                cost_matrix=np.delete(cost_matrix, i-i_del, 0)
+                cost_matrix_predict=np.delete(cost_matrix_predict, i-i_del, 0)
+                del contours[i-i_del]
+                del contour_list[i-i_del]
+                hog2predict = np.delete(hog2predict,i-i_del,0)
+                hog2track = np.delete(hog2track,i-i_del,0)
+                i_del=i_del+1
+                
+        #disable tracking and set prediction to unknown   
+        for j in range(num_particle):
+            if predict2hog[j]== -2 or track2hog[j] ==-2:
+                cost_matrix[:,j]=cost_matrix[:,j]*0+10000
+                cost_matrix_predict[:,j]=cost_matrix_predict[:,j]*0+10000
+                #set tracking results to false
+                particle_List[j].get_save_position(frame_num, (-100,-100,-100,-100))
         
-        print(hog_fake)
+#        #use cost_matrix_predict to find overlapped detection 
+#        for i in range(len(contours)):
+#            for j in range(num_particle):
+#                if cost_matrix_predict[i,j] < CostOfNonAssignment:
+#                    hog_fake[i]=hog_fake[i]+1
+#            if hog_fake[i]>1:
+#                cost_matrix[i,:]=cost_matrix[i,:]*0+10000
+#                cost_matrix_predict[i,:]=cost_matrix_predict[i,:]*0+10000
+#            else:
+#                hog_fake[i]=0
         
-        
-        
-        
+        #print(hog2predict)
+     
+    #fix a bug. case when no detection found. add a fake detection result to let np.amin(cost_matrix[x,x]) run
+    if len(contours)==0:
+        cost_matrix = np.zeros((1,num_particle))+10000
+        cost_matrix_predict = np.zeros((1,num_particle))+10000
+    
     #assignDetectionsToTracks(costMatrix,costOfNonAssignment)
     hog_new=np.zeros(len(contours),int)-1
 
     for j in range(num_particle):
+        particle_List[j].index_2h=-1
         minElement = np.amin(cost_matrix[:,j])
         hog_i = np.where(cost_matrix[:,j] == minElement)
         hog_i=hog_i[0][0]
@@ -458,17 +519,37 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
             current_position[0],current_position[1]= bbox2point(particle_List[j].bbox)       
             particle_List[j].kalman.correct(current_position)     
 #           set number detected
-            if particle_List[j].speed[1]<-2:
-                if particle_List[j].appear>4:
-                    ok = particle_List[j].assign_PN (num_detected)
-                    if ok:
-                        num_detected= num_detected + 1
+            if particle_List[j].appear>5:
+                ok = particle_List[j].assign_PN (num_detected)
+                if ok:
+                    num_detected= num_detected + 1
                         
-        elif particle_List[j].case == 2: 
+        elif particle_List[j].case == 2:
+            #check if unsigned predict closed to unsigned detection
+            mindistance=16*10000
+            #find min distance between unsigned predict and this detection
+            fake_j=-1
+            for j_temp in range(num_particle):
+                if predict2hog[j_temp]==-1:
+                    if not j_temp==j:                     
+                        if particle_List[j_temp].kalman_ok: 
+                            x_track=particle_List[j].position_x[-1]
+                            y_track=particle_List[j].position_y[-1]
+                            [x_predict,y_predict]= particle_List[j_temp].position_prediction
+                            distance=(x_predict-x_track)**2+(y_predict-y_track)**2
+                            if distance < mindistance:
+                                mindistance = distance
+                                fake_j = j_temp
+                                
+            if mindistance < 9*CostOfNonAssignment:
+                ok = particle_List[j].assign_PN (particle_List[fake_j].PN)
+                particle_List[fake_j].appear = 0
+                predict2hog[fake_j]=-2
+                print(fake_j)
             #init kalman filter
             particle_List[j].init_kalman()
             #add point
-            particle_List[j].report_found()
+            #particle_List[j].report_found()
 
         elif particle_List[j].case == 3: 
             #get bbox of target detection
@@ -491,15 +572,19 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
             particle_List[j].appear = 0
         elif particle_List[j].case == 6:    
             particle_List[j].report_missing()
+            #disable tracking
+            particle_List[j].tracking_ok = 0
             particle_List[j].save_position(frame_num, particle_List[j].position_prediction)
 
   
-    #remove dead object
+    #remove dead object. if only one object left,do not delete it.
     point_p=0
     num_particle=len(particle_List)
     for j in range(num_particle):
         if particle_List[point_p].appear == 0:
-            del particle_List[point_p]
+            #if only one object left,do not delete it.
+            if len(particle_List)>1:
+                del particle_List[point_p]
         else:
             point_p=point_p+1
     
@@ -507,8 +592,8 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
     i_det=0
     for bbox in contour_list:
         if hog_new[i_det]==-1:
-            if hog_fake[i_det]==0:
-                create_new_particle(bbox, img_gray, particle_List, frame_num)
+#            if hog_fake[i_det]==0:
+            create_new_particle(bbox, img_gray, particle_List, frame_num)
         i_det = i_det + 1
     
     # label and summary 
@@ -517,18 +602,30 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
     num_particle=len(particle_List)
     print('num of tracking object:' + str(num_particle))
     for j in range(num_particle):
-                #write data in excel         
+      
         if particle_List[j].PN > 0:
-            sheet1.write(frame_count,2*particle_List[j].PN,particle_List[j].position_x[-1])
-            sheet1.write(frame_count,2*particle_List[j].PN+1,particle_List[j].position_y[-1])
+            ##write data in excel   
+            #sheet1.write(frame_count,2*particle_List[j].PN,particle_List[j].position_x[-1])
+            #sheet1.write(frame_count,2*particle_List[j].PN+1,particle_List[j].position_y[-1])
+            cv2.circle(img_gray,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), 50, 0, 3)
+            cv2.putText(img_gray, str(particle_List[j].PN), (particle_List[j].position_x[-1],particle_List[j].position_y[-1]), font, 1, (255), 1, cv2.LINE_AA)
+        else:
+            if particle_List[j].kalman_ok==1:
+                cv2.circle(img_gray,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), 40, 0, 1)
             
-        if particle_List[j].appear > 0:
-            cv2.circle(img_gray,tuple(particle_List[j].position_prediction), 50, 0, 1)
-            #draw_bbox (img_gray, particle_List[j].bbox, 255)
-            #cv2.putText(img_gray, str(particle_List[j].case),tuple([particle_List[j].position_x[-1],particle_List[j].position_y[-1]]), font, 1, (255), 1, cv2.LINE_AA)
-            cv2.putText(img_gray, str(j)+':'+ str(particle_List[j].case), tuple(particle_List[j].position_prediction), font, 1, (255), 1, cv2.LINE_AA)
-            #print(str(j) + '_t2h:' + str(particle_List[j].distance_t2h))
-            #print(str(j) + '_k2t:' + str(particle_List[j].distance_k2t))
+            
+            
+#        if particle_List[j].appear > 0:
+#            cv2.circle(img_gray,tuple(particle_List[j].position_prediction), 50, 0, 1)
+##            cv2.circle(img_gray,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), 50, 0, 1)
+#            #draw_bbox (img_gray, particle_List[j].bbox, 255)
+#            #cv2.putText(img_gray, str(j)+':'+str(particle_List[j].case),tuple([particle_List[j].position_x[-1],particle_List[j].position_y[-1]]), font, 1, (255), 1, cv2.LINE_AA)
+#            cv2.putText(img_gray, str(particle_List[j].PN) + ':' + str(particle_List[j].case), tuple(particle_List[j].position_prediction), font, 1, (255), 1, cv2.LINE_AA)
+#            
+#            #print(str(j) + '_t2h:' + str(particle_List[j].distance_t2h))
+#            #print(str(j) + '_k2t:' + str(particle_List[j].distance_k2t))
+        
+        #
 
     #show summary
     #cv2.putText(img_gray, 'algae num:' + str(num_algae) ,(100,950), font, 3, (0), 3, cv2.LINE_AA)
@@ -579,9 +676,9 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
     print('all num:' + str(num_detected))
     
 #write in title excel
-for j in range (num_detected):
-    sheet1.write(0,2*j,str(j)+':x')
-    sheet1.write(0,2*j+1,str(j)+':y')
+#for j in range (num_detected):
+    #sheet1.write(0,2*j,str(j)+':x')
+    #sheet1.write(0,2*j+1,str(j)+':y')
 
 #book.save("1.xls")
     

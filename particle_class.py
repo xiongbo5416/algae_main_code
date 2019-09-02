@@ -47,8 +47,8 @@ class particle:
       #save index of hog detector
       self.index_2h = -1
       self.case=0
-      self.type = 'unknown'
       self.PN = 0
+      self.type = 'unknown'
       #0 is unknow 
       #1 is beam
       #2 is algae
@@ -64,6 +64,7 @@ class particle:
         
     def tracker_create(self):
         self.tracker = cv2.TrackerCSRT_create()
+        self.tracking_ok = 1
 #if tracker_type == 'BOOSTING':
 #    tracker = cv2.TrackerBoosting_create()
 #if tracker_type == 'MIL':
@@ -133,7 +134,7 @@ class particle:
 
     # report that object is found       
     def report_found(self):
-         self.appear = self.appear+1
+         self.appear = self.appear+2
          if self.appear > 10:
              self.appear = 10
 
@@ -243,7 +244,7 @@ class particle:
     #update tracking 
     #input: 'img_gray' is a gray image. 'frame_num' is num of current frame 
     def tracker_update(self, img_gray,frame_num):
-        if frame_num== self.frame[-1]+1:
+        if frame_num== self.frame[-1]+1 and self.tracking_ok == 1:
             ok, bbox = self.tracker.update(img_gray)#update tracker
             self.track_bbox = bbox
             self.get_save_position(frame_num, bbox)
