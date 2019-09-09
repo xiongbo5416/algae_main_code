@@ -139,8 +139,7 @@ num_algae=0
 num_bead=0
 num_detected = 0
 
-CostOfNonAssignment=1600
-CostOfNonPerfect=400
+
 
 #creat a excel
 book = xlwt.Workbook(encoding="utf-8")
@@ -155,6 +154,9 @@ num_w_wide=int((1640-WIDE_WINDOW)/STRIDE_WINDOW+1)
 num_w_height=int((1232-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
 windows_A=np.zeros((num_w_height,num_w_wide,HEIGHT_WINDOW,WIDE_WINDOW),dtype=np.uint8)
 windows_label=np.zeros((num_w_height+10,num_w_wide+10),dtype=np.uint8)
+
+CostOfNonAssignment=STRIDE_WINDOW*STRIDE_WINDOW*6
+CostOfNonPerfect=CostOfNonAssignment/5
 
 #config HOG
 hog = get_hog()
@@ -276,7 +278,7 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
         bbox = (int(detection_x*STRIDE_WINDOW),int(detection_y*STRIDE_WINDOW),WIDE_WINDOW,HEIGHT_WINDOW)
         contour_list.append(bbox)
         #draw hog detection
-        #draw_bbox (img_gray, bbox, 255)
+        draw_bbox (img_gray, bbox, 255)
     hog_fake=np.zeros(len(contour_list),int)
             
             
