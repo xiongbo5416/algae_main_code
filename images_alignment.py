@@ -32,7 +32,7 @@ fl_name = askopenfilename() # show an "Open" dialog box and return the path to t
 print(fl_name)
 img_2 = cv2.imread(fl_name)
 gray_2 = cv2.cvtColor(img_2, cv2.COLOR_BGR2GRAY)
-gray_2 = cv2.multiply(gray_2,6)
+gray_2 = cv2.multiply(gray_2,1)
 
 
 #point1s are in the lensfree images
@@ -66,14 +66,16 @@ for i in range(NUM_POINTS):
 
 cv2.destroyAllWindows()
 #points2 = np.zeros((4, 2), dtype=np.float32)
-##points2[0]=(1001,205)
-##points2[1]=(918,398)
-##points2[2]=(695,565)
-##points2[3]=(595,592)
-##points2[4]=(662,794)
-##points2[5]=(287,510)
-##points1[6]=(242,346)
-##points1[7]=(1142,736)
+
+#points1[0]=(435,20)
+#points1[1]=(843,218)
+#points1[2]=(959,834)
+#points1[3]=(208,791)
+#points2[0]=(1534,650)
+#points2[1]=(1382,343)
+#points2[2]=(905,243)
+#points2[3]=(928,798)
+
 #
     
 #
@@ -82,7 +84,11 @@ h, mask = cv2.findHomography(points2, points1, cv2.RANSAC)
 height, width = gray_1.shape
 gray_2_reg = cv2.warpPerspective(gray_2, h, (width, height))
 
-cv2.imshow('frame',gray_2_reg)
+
+cv2.namedWindow("1", cv2.WINDOW_NORMAL) 
+cv2.imshow('1',gray_2_reg)
+cv2.namedWindow("2", cv2.WINDOW_NORMAL) 
+cv2.imshow('2',gray_1)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
