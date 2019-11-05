@@ -29,7 +29,7 @@ def get_hog() :
     gammaCorrection = 1
     nlevels = 64
     signedGradient = True
-`
+
     hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma,histogramNormType,L2HysThreshold,gammaCorrection,nlevels, signedGradient)
 
     return hog
@@ -98,8 +98,8 @@ labels_train=[]
 
 
 images_folder = filedialog.askdirectory()
-for f in glob.glob(os.path.join(images_folder, "*.jpg")):
-    if f[-9:] != 'label.jpg':
+for f in glob.glob(os.path.join(images_folder, "*.bmp")):
+    if f[-9:] != 'label.bmp':
         img=cv2.imread(f)
         img=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img = cv2.GaussianBlur(img,(3,3),0)
@@ -121,7 +121,7 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
         mask_window_random=mask_window_random.astype(np.uint8)
         
         #read label imag
-        f_2 = f[0:-4]+'label.jpg'
+        f_2 = f[0:-4]+'label.bmp'
         img_label=cv2.imread(f_2)
         img_label_r=img_label[:,:,2]
         img_label_g=img_label[:,:,1]
@@ -152,8 +152,8 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
         '''
         get blue dot which refer to uncertain label
         '''
-        ret,thresh1 = cv2.threshold(img_label_b,200,255,cv2.THRESH_BINARY)
-        ret,thresh2 = cv2.threshold(img_label_g,50,255,cv2.THRESH_BINARY_INV)
+        ret,thresh1 = cv2.threshold(img_label_b,230,255,cv2.THRESH_BINARY)
+        ret,thresh2 = cv2.threshold(img_label_g,20,255,cv2.THRESH_BINARY_INV)
         mask_uncertain=cv2.bitwise_and(thresh1, thresh1, mask=thresh2)
         location_uncertain=[]
         image, contours, hierarchy = cv2.findContours(mask_uncertain,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)

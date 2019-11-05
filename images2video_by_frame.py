@@ -17,16 +17,22 @@ images_folder = filedialog.askdirectory()
 frame_i=1
 font = cv2.FONT_HERSHEY_SIMPLEX
 for f in glob.glob(os.path.join(images_folder, "*.bmp")):
+    frame_i=frame_i+1
+    print(f)
+    if frame_i <30*60*10:
+        continue
+    if frame_i >30*60*15:
+        break
+    
     img = cv2.imread(f)
-    #img = img[0:1000,0:1300,:]
     img_array.append(img)
     height, width, layers = img.shape
     size = (width,height)
-    #cv2.putText(img, str(frame_i), (100,100), font, 2, (255), 2, cv2.LINE_AA)
-    frame_i=frame_i+1
-    print(f)
+    cv2.putText(img, str(frame_i), (100,100), font, 2, (255), 2, cv2.LINE_AA)
+    #frame_i=frame_i+1
+    #print(f)
     
-out = cv2.VideoWriter('project.avi',cv2.VideoWriter_fourcc(*'DIVX'), 10, size)
+out = cv2.VideoWriter('16_20min.avi',cv2.VideoWriter_fourcc(*'DIVX'), 10, size)
  
 for i in range(len(img_array)):
     out.write(img_array[i])

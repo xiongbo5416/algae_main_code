@@ -6,7 +6,7 @@ Created on Wed Jun  5 10:44:28 2019
 """
 from particle_class import particle
 import cv2
-import dlib
+import pickle
 import numpy as np
 import glob
 import os
@@ -138,6 +138,9 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 num_algae=0
 num_bead=0
 num_detected = 0
+found_particles=[]
+frame_particles=[]
+current_particles=[]
 
 
 
@@ -163,15 +166,16 @@ hog = get_hog()
 hog_descriptors = []
 
 # Now create a new SVM & load the model:
-model = cv2.ml.SVM_load("svm_model.xml")
+filename = 'finalized_model.sav'
+model = pickle.load(open(filename, 'rb'))
 
     
-for f in glob.glob(os.path.join(images_folder, "*.jpg")):
+for f in glob.glob(os.path.join(images_folder, "*.bmp")):
     frame = cv2.imread(f)
     img_gray=cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     img_gray = cv2.GaussianBlur(img_gray,(3,3),0)
     last_frame_num=copy.deepcopy(frame_num)
-    frame_num= f[-8:-4]
+    frame_num= f[-9:-4]
     frame_num = int(frame_num)
     print(frame_num) 
     frame_count=frame_count+1
@@ -251,21 +255,24 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
     hog_descriptors = np.reshape(descriptor, (-1, int(WIDE_WINDOW*HEIGHT_WINDOW/STRIDE_WINDOW/STRIDE_WINDOW*9)))
     hog_descriptors = np.squeeze(hog_descriptors)
     
-    # SVM predict
-    predictions = svmPredict(model, hog_descriptors)
-    windows_prediction = np.reshape(predictions, (num_w_height,num_w_wide,))
-    windows_prediction=windows_prediction*127
-    windows_prediction=windows_prediction.astype(np.uint8)      
+    #predict using svm_proba
+    predictions = model.predict_proba(hog_descriptors)
+    predictions = predictions[:,1]
+    windows_prediction = np.reshape(predictions, (num_w_height,num_w_wide))
+    windows_prediction=windows_prediction*255
+    windows_prediction=windows_prediction.astype(np.uint8)
+    #windows_prediction_2=deepcopy(windows_prediction)
+    ret,windows_prediction = cv2.threshold(windows_prediction,140,255,cv2.THRESH_BINARY)    
 
     #find overlap hod detection. And reduce overlap section using     
-    contour_list = []
-    image, contours, hierarchy = cv2.findContours(windows_prediction,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-    for k in range(len(contours)):
-        box_ps = contours2box_ps(contours[k])
-        bbox = (box_ps[0], box_ps[1], box_ps[2]-box_ps[0], box_ps[3]-box_ps[1])
-        kernel = np.ones((2,2),np.uint8)
-        if bbox[2]>4 or bbox[3]>4:
-            windows_prediction[box_ps[1]:box_ps[3]:,box_ps[0]:box_ps[2]]=cv2.erode(windows_prediction[box_ps[1]:box_ps[3]:,box_ps[0]:box_ps[2]],kernel,iterations = 1)
+#    contour_list = []
+#    image, contours, hierarchy = cv2.findContours(windows_prediction,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+#    for k in range(len(contours)):
+#        box_ps = contours2box_ps(contours[k])
+#        bbox = (box_ps[0], box_ps[1], box_ps[2]-box_ps[0], box_ps[3]-box_ps[1])
+#        kernel = np.ones((2,2),np.uint8)
+#        if bbox[2]>4 or bbox[3]>4:
+#            windows_prediction[box_ps[1]:box_ps[3]:,box_ps[0]:box_ps[2]]=cv2.erode(windows_prediction[box_ps[1]:box_ps[3]:,box_ps[0]:box_ps[2]],kernel,iterations = 1)
 
 
     # save HOG results to contour_list
@@ -676,7 +683,9 @@ for f in glob.glob(os.path.join(images_folder, "*.jpg")):
     print('algae num:' + str(num_algae))
     print('bead num:' + str(num_bead))
     print('all num:' + str(num_detected))
-    
+    frame_particles.append(frame_num)
+    found_particles.append(num_detected)
+    current_particles.append(num_particle)
 #write in title excel
 #for j in range (num_detected):
     #sheet1.write(0,2*j,str(j)+':x')

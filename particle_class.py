@@ -55,11 +55,16 @@ class particle:
       
       
     def assign_PN (self,num):
+        ret = 0
         if self.PN == 0:
-            self.PN = num
-            return 1
-        else :
-            return 0
+            #if this particle is moving
+            if self.speed[0]*self.speed[0]+self.speed[1]*self.speed[1]>4:
+                #if this particle is in a suitable area
+                if 200<self.position_y[-1]<1000:
+                    self.PN = num
+                    ret = 1
+        
+        return ret
         
         
     def tracker_create(self):
