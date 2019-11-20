@@ -58,7 +58,7 @@ class particle:
         ret = 0
         if self.PN == 0:
             #if this particle is moving
-            if self.speed[0]*self.speed[0]+self.speed[1]*self.speed[1]>4:
+            if self.speed[0]*self.speed[0]+self.speed[1]*self.speed[1]>2:
                 #if this particle is in a suitable area
                 if 200<self.position_y[-1]<1000:
                     self.PN = num
@@ -235,8 +235,11 @@ class particle:
     def save_prediction(self, prediction):
         self.position_prediction[0] =  prediction[0][0]
         self.position_prediction[1] =  prediction[1][0]
-        self.speed[0] =  prediction[2][0]
-        self.speed[1] =  prediction[3][0]
+        
+    def speed_update(self):
+        self.speed[0]= (self.position_x[-2] - self.position_x[-1]) / (self.frame[-2]-self.frame[-1])
+        self.speed[1]= (self.position_y[-2] - self.position_y[-1]) / (self.frame[-2]-self.frame[-1])  
+        
         
     #save position and speed prediction. Input is predicted by linear     
     def save_prediction_li(self, prediction):

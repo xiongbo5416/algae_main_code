@@ -26,7 +26,7 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
     frame_i=frame_i+1
     print(f)
     
-out = cv2.VideoWriter('project.avi',cv2.VideoWriter_fourcc(*'DIVX'), 10, size)
+out = cv2.VideoWriter(images_folder+'/project.avi',cv2.VideoWriter_fourcc(*'DIVX'), 2, size)
  
 for i in range(len(img_array)):
     out.write(img_array[i])

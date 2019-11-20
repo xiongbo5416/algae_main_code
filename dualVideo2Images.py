@@ -78,7 +78,7 @@ bgd_frame=bgd_frame*0
 
 #######################parameter init
 #Moving average used to got bgd. N_MOVING is a how many frames used in moving average.
-N_MOVING=40
+N_MOVING=60
 bgd=np.zeros((ROL_NUM,COL_NUM,N_MOVING))
 bgd_name=[]
 i_MOVING=0
@@ -95,8 +95,8 @@ current_frame_fl=0
 excitation_st=0  
 RedOrNot=0
 n_moving=0
-CONTRAST_EH=3
-FL_EH=6
+CONTRAST_EH=2
+FL_EH=1
 NUM_COMP=1 #since lensfree images and fluorescent images are not start at same time. A compenstion is required.
 #creat a list to record the frame No. that is the first frame in each lasers toggle period
 MAX_PERIOD=10000 #this define the quatity of red laser burst
@@ -339,9 +339,10 @@ if len(videoname2) >0:
                #cv2.imwrite(name,gray_reg)
                #cv2.imwrite(name,fg_gray_reg) 
                
-           #record num of frames in this period
-           #fl_period[period_num-1]=list_period[period_num-1]+excitation_st-1+NUM_COMP
-           #cv2.imwrite(name,cv2.multiply(gray_1,4)) 
+               #record num of frames in this period
+               #fl_period[period_num-1]=current_frame_fl-1+10000
+               cv2.imwrite(name,gray_reg) 
+           
            #print(gray_highlight_sum)
            gray_1=gray_0.copy()#save this image of this frame
            

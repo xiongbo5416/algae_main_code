@@ -150,7 +150,7 @@ while period_num<MAX_PERIOD:
     #print(max(grey_profile))
     
     #red laser is off
-    if  max(grey_profile)>250 or max(grey_profile)<30:
+    if  max(grey_profile)>250 or min(grey_profile)<20:
         RedOrNot=0
     
     # red laser just turn on. the first frame in this cycle
