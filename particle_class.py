@@ -23,7 +23,11 @@ class particle:
       self.frame= [0, 0, 0, 0]
       self.frame_fl= [0, 0]
       self.speed = [0, 0]
+<<<<<<< Updated upstream
       self.appear = 5
+=======
+      self.appear = 4
+>>>>>>> Stashed changes
       self.img_fl = np.zeros((particle.FL_SIZE,particle.FL_SIZE)) 
       self.img_fl= np.append(self.img_fl, self.img_fl, axis = 0)
       self.position_prediction = [-1,-1]
@@ -123,9 +127,15 @@ class particle:
              self.speed[1]=0
     # report that object is found       
     def report_found(self):
+<<<<<<< Updated upstream
          self.appear = self.appear+1
          if self.appear > 10:
              self.appear = 10
+=======
+         self.appear = self.appear+3
+         if self.appear > 12:
+             self.appear = 12
+>>>>>>> Stashed changes
 
     
     # calculate speed of this object based on position in the current and previous frames

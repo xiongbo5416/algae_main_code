@@ -91,6 +91,28 @@ num_bead=0
 num_detected = 0
 
 
+<<<<<<< Updated upstream
+=======
+#sliding windows config
+STRIDE_WINDOW=16
+WIDE_WINDOW=4*16
+HEIGHT_WINDOW=6*16
+num_w_wide=int((1640-WIDE_WINDOW)/STRIDE_WINDOW+1)
+num_w_height=int((1232-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
+windows_A=np.zeros((num_w_height,num_w_wide,HEIGHT_WINDOW,WIDE_WINDOW),dtype=np.uint8)
+windows_label=np.zeros((num_w_height+10,num_w_wide+10),dtype=np.uint8)
+
+CostOfNonAssignment=STRIDE_WINDOW*STRIDE_WINDOW*6
+CostOfNonPerfect=CostOfNonAssignment/4
+
+#config HOG
+hog = get_hog()
+hog_descriptors = []
+
+# Now create a new SVM & load the model:
+filename = 'finalized_model.sav'
+model = pickle.load(open(filename, 'rb'))
+>>>>>>> Stashed changes
 
     
 for f in glob.glob(os.path.join(PATH + FOLDER_name, "*.jpg")):
@@ -133,6 +155,7 @@ for f in glob.glob(os.path.join(PATH + FOLDER_name, "*.jpg")):
                 for i in range(frame_num-last_frame_num):
                     current_prediction = particle_List[j].kalman.predict()
                 particle_List[j].save_prediction(current_prediction)
+<<<<<<< Updated upstream
                 p1 = (int(current_prediction[0]-50), int(current_prediction[1]-50))
                 p2 = (int(current_prediction[0]+50), int(current_prediction[1]+50))
                 '''
@@ -150,6 +173,123 @@ for f in glob.glob(os.path.join(PATH + FOLDER_name, "*.jpg")):
                             num_algae = num_algae+1
                         if type_tem == 'PS_bead':
                             num_bead = num_bead + 1
+=======
+                #correct position with prediction
+                particle_List[j].save_position(frame_num, particle_List[j].position_prediction)
+                
+        
+        for j in range(num_particle):        
+            if particle_List[j].PN > 0:
+                #update speed
+                particle_List[j].speed_update()
+                speed_temp=copy.deepcopy(particle_List[j].speed)
+                #get the sub_image that need to be saved
+                sub_image = point2bbox_image(img_gray,particle_List[j].position_x[-1],particle_List[j].position_y[-1] + 50, 56, 100)
+                
+                #write data into pandas dataframe
+                ##pd.DataFrame['frame', 'PN', 'speed', 'location_x','location_y', 'lensf', 'lensf_subimage', 'case']) 
+                df=df.append({'frame' : frame_num ,'PN' :particle_List[j].PN, 'speed':speed_temp,'location_x':particle_List[j].position_x[-1], 'location_y':particle_List[j].position_y[-1], 'lensf': 0,'fl_subimage': sub_image , 'case': particle_List[j].case, 'period_n':period_n}, ignore_index = True) 
+                
+                ##write data in excel   
+                #sheet1.write(frame_count,2*particle_List[j].PN,particle_List[j].position_x[-1])
+                #sheet1.write(frame_count,2*particle_List[j].PN+1,particle_List[j].position_y[-1])
+                cv2.circle(img_gray_draw,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]+50), 28, 128, 3)
+                cv2.putText(img_gray_draw, str(particle_List[j].PN), (particle_List[j].position_x[-1],particle_List[j].position_y[-1]), font, 1, (128), 1, cv2.LINE_AA)
+            else:
+                if particle_List[j].kalman_ok==1:
+                    cv2.circle(img_gray_draw,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), 40, 128, 1)
+        
+    ######## process lensfree images
+    if not f[-5]=='f':
+        #count period number
+        if period_flag==1:
+            period_n=period_n+1
+        period_flag=0
+        
+        frame = cv2.imread(f)
+        img_gray=cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        #preprocess
+        img_gray=cv2.multiply(img_gray-128+int(128/3),3)#enhacne contrast of gray images
+        img_gray = cv2.GaussianBlur(img_gray,(3,3),0)#blurring
+        
+        img_gray_draw= copy.deepcopy(img_gray)
+        last_frame_num=copy.deepcopy(frame_num)
+        frame_num= f[-9:-4]
+        frame_num = int(frame_num)
+        print(frame_num) 
+        f_save=copy.deepcopy(f)
+        
+
+        
+    #    # if 1st frame, create particles with hog, init tracking
+    #    if frame_count==1:
+    #        #detect particles in img
+    #        dets = detector(img_gray)
+    #        #init tracker 
+    #        for k, d in enumerate(dets):
+    #            #get bbox from dets
+    #            bbox = (d.left(), d.top(), d.right()-d.left(), d.bottom()-d.top())
+    #            create_new_particle(bbox, img_gray, particle_List, frame_num)
+    #            #label particles with square and save
+    #            draw_bbox (img_gray, bbox, 0)
+    #            cv2.imwrite(f_save,img_gray) 
+    #            
+    #        continue
+        
+    #    '''
+    #    if this frame is flourescent images
+    #    '''
+    #    type_tem='unknown'
+    #    # if this frame is not lensfree frame
+    #    if frame_num not in lensfree_frames:
+    #        num_particle=len(particle_List)
+    #        for j in range(num_particle):
+    #            '''
+    #            Prediction. each particles in a list
+    #            '''
+    #            if particle_List[j].kalman_ok:
+    #                for i in range(frame_num-last_frame_num):
+    #                    current_prediction = particle_List[j].kalman.predict()
+    #                particle_List[j].save_prediction(current_prediction)
+    #                p1 = (int(current_prediction[0]-50), int(current_prediction[1]-50))
+    #                p2 = (int(current_prediction[0]+50), int(current_prediction[1]+50))
+    #                '''
+    #                Collect fluorescent signal
+    #                '''
+    #                if p1[0]>= 0 and p1[1]>= 0 and p2[0]< 1640 and p2[1]<700:
+    #                    img_fl=img_gray[p1[1]:p2[1],p1[0]:p2[0]]
+    #                    particle_List[j].save_fl_img(frame_num,img_fl)
+    #                    '''
+    #                    Check if algae
+    #                    ''' 
+    #                    if particle_List[j].type == 'unknown':
+    #                        type_tem = particle_List[j].check_algae() 
+    #                        if type_tem == 'algae':
+    #                            num_algae = num_algae+1
+    #                        if type_tem == 'PS_bead':
+    #                            num_bead = num_bead + 1
+    #    
+    #        #label particles
+    #        for j in range(num_particle):
+    #            if particle_List[j].kalman_ok:
+    #                p1 = (int(particle_List[j].position_prediction[0]-50), int(particle_List[j].position_prediction[1]-70))
+    #                p2 = (int(particle_List[j].position_prediction[0]+50), int(particle_List[j].position_prediction[1]+30))
+    #                cv2.rectangle(img_gray, p1, p2, (255), 2, 1)
+    #                cv2.putText(img_gray,str(particle_List[j].PN) +':' + particle_List[j].type, p1, font, 1, (255), 1, cv2.LINE_AA)
+    #                
+    #            #show summary
+    #        cv2.putText(img_gray, 'algae num:' + str(num_algae) ,(100,950), font, 3, (0), 3, cv2.LINE_AA)
+    #        cv2.putText(img_gray, 'bead num:' + str(num_bead) ,(100,1150), font, 3, (0), 3, cv2.LINE_AA)
+    #    
+    #        cv2.imwrite(f_save,img_gray) 
+    #        continue
+        
+        
+        '''
+        detect particles with hog in img
+        '''
+>>>>>>> Stashed changes
     
         #label particles
         for j in range(num_particle):
@@ -220,6 +360,181 @@ for f in glob.glob(os.path.join(PATH + FOLDER_name, "*.jpg")):
             #cv2.circle(img_gray,(current_prediction[0],current_prediction[1]), 25, 255, 1)
         
         
+<<<<<<< Updated upstream
+=======
+        #get cost_matrix using prediction, the distance square between prediction and detection
+        cost_matrix_predict = np.zeros((len(contours),num_particle))+10000
+        for j in range(num_particle):
+            if particle_List[j].kalman_ok:
+                for i in range(len(contours)):
+                    #get position of each contours
+                    x_det,y_det= bbox2point(contour_list[i])
+                    #get position of each particle
+                    x_prediction=particle_List[j].position_prediction[0]
+                    y_prediction=particle_List[j].position_prediction[1]
+                    #save distance in matrix
+                    cost_matrix_predict[i,j]=(x_det-x_prediction)**2+(y_det-y_prediction)**2
+                    
+                    
+    #  get indexs for pair with 1 proity 
+        if len(contours)>0 and num_particle>0:
+            hog2track=np.zeros(len(contours),int)-1
+            hog2predict=np.zeros(len(contours),int)-1
+            track2hog=np.zeros(num_particle,int)-1
+            predict2hog=np.zeros(num_particle,int)-1
+    
+            for j in range(num_particle):
+                minElement = np.amin(cost_matrix[:,j])
+                if minElement < CostOfNonAssignment:
+                    track2hog[j] = np.where(cost_matrix[:,j] == minElement)[0][0]
+                minElement = np.amin(cost_matrix_predict[:,j])
+                if minElement < CostOfNonAssignment:
+                    predict2hog[j] = np.where(cost_matrix_predict[:,j] == minElement)[0][0] 
+                
+            for i in range(len(contours)):
+                minElement = np.amin(cost_matrix[i,:])
+                if minElement < CostOfNonAssignment:
+                    hog2track[i] = np.where(cost_matrix[i,:] == minElement)[0][0] 
+                minElement = np.amin(cost_matrix_predict[i,:])
+                if minElement < CostOfNonAssignment:
+                    hog2predict[i] = np.where(cost_matrix_predict[i,:] == minElement)[0][0] 
+              
+            #find overlap hog and label fake this hog detection using prediction
+            for i in range(len(contours)):
+                temp = np.where(predict2hog==i)
+                if len(temp[0]) > 1:
+                    #release predict pair
+                    predict2hog[temp[0]]=-2
+                    #report fake hog
+                    hog2predict[i]=-2
+    
+                    hog_fake[i]=1
+                    
+            #find overlap hog and label fake this hog detection using tracking
+            for i in range(len(contours)):
+                temp = np.where(track2hog==i)
+                if len(temp[0]) > 1:
+                    #release predict pair
+                    track2hog[temp[0]]=-2
+                    #report fake hog
+                    hog2track[i]=-2
+                    hog_fake[i]=1
+    
+            #to fix the bug that two detections merge to one detection
+            #del fake hog and set relavant particle to unknow,disable tracking results
+            i_del=0
+            for i in range(len(contours)):
+                if hog_fake[i] > 0:
+    #                hog_fake[i] = 0
+                    cost_matrix=np.delete(cost_matrix, i-i_del, 0)
+                    cost_matrix_predict=np.delete(cost_matrix_predict, i-i_del, 0)
+                    del contours[i-i_del]
+                    del contour_list[i-i_del]
+                    hog2predict = np.delete(hog2predict,i-i_del,0)
+                    hog2track = np.delete(hog2track,i-i_del,0)
+                    i_del=i_del+1
+                    
+            #disable tracking and set prediction to unknown   
+            for j in range(num_particle):
+                if predict2hog[j]== -2 or track2hog[j] ==-2:
+                    cost_matrix[:,j]=cost_matrix[:,j]*0+10000
+                    cost_matrix_predict[:,j]=cost_matrix_predict[:,j]*0+10000
+                    #set tracking results to false
+                    particle_List[j].get_save_position(frame_num, (-100,-100,-100,-100))
+            
+    #        #use cost_matrix_predict to find overlapped detection 
+    #        for i in range(len(contours)):
+    #            for j in range(num_particle):
+    #                if cost_matrix_predict[i,j] < CostOfNonAssignment:
+    #                    hog_fake[i]=hog_fake[i]+1
+    #            if hog_fake[i]>1:
+    #                cost_matrix[i,:]=cost_matrix[i,:]*0+10000
+    #                cost_matrix_predict[i,:]=cost_matrix_predict[i,:]*0+10000
+    #            else:
+    #                hog_fake[i]=0
+            
+    
+         
+        #fix a bug. case when no detection found. add a fake detection result to let np.amin(cost_matrix[x,x]) run
+        if len(contours)==0:
+            cost_matrix = np.zeros((1,num_particle))+10000
+            cost_matrix_predict = np.zeros((1,num_particle))+10000
+        
+        #assignDetectionsToTracks(costMatrix,costOfNonAssignment)
+        hog_new=np.zeros(len(contours),int)-1
+    
+        for j in range(num_particle):
+            particle_List[j].index_2h=-1
+            minElement = np.amin(cost_matrix[:,j])
+            hog_i = np.where(cost_matrix[:,j] == minElement)
+            hog_i=hog_i[0][0]
+            #case assigned tracking 
+            if minElement < CostOfNonAssignment: #case 1,2
+                #if this particle is not assigned to a det
+                if hog_new[hog_i] == -1:
+                    if particle_List[j].kalman_ok:
+                        particle_List[j].case = 1
+                    else:
+                        particle_List[j].case = 2  
+                    hog_new[hog_i]=j
+                    particle_List[j].index_2h= hog_i
+                        
+            #case unassigned tracking
+            else: #case 3,4,5,6
+                if particle_List[j].kalman_ok: #case 3,4,6 
+                    x_track=particle_List[j].position_x[-1]
+                    y_track=particle_List[j].position_y[-1]
+                    [x_predict,y_predict]= particle_List[j].position_prediction
+                    distance=(x_predict-x_track)**2+(y_predict-y_track)**2
+    
+                    if distance < CostOfNonAssignment:
+                        particle_List[j].case = 4
+                    else:
+                        minElement = np.amin(cost_matrix_predict[:,j])
+                        hog_i = np.where(cost_matrix_predict[:,j] == minElement)
+                        hog_i=hog_i[0][0]
+                        #########fix the bug that two detection merge to one particles when tracking is missing.
+                        temp=cost_matrix_predict[hog_i,:]###all the cost to one hog detection
+                        temp = np.delete(temp, j)
+                        minElement_second=5*CostOfNonAssignment#init of second small cost
+                        if len(temp)>0:
+                            minElement_second = np.amin(temp)#second small cost
+                            
+                        if minElement < minElement_second and minElement_second > 2*CostOfNonAssignment:
+                            particle_List[j].case = 3
+                            hog_new[hog_i]=j
+                            particle_List[j].index_2h= hog_i
+                        else:
+                            particle_List[j].case = 6
+                else:
+                    particle_List[j].case = 5
+                    
+         # unassignedDetections= case 3,0
+         # case unassigned detecton
+    #    for i in range(len(contours)):
+    #        if hog_new[i]==-1:              
+    #            Distance_k2h = 500
+    #            #get current det position
+    #            box_ps = contours2box_ps(contours[i])
+    #            bbox = (box_ps[0], box_ps[1], box_ps[2]-box_ps[0], box_ps[3]-box_ps[1])
+    #            for j in range(num_particle):
+    #                current_position[0],current_position[1]= bbox2point(bbox) 
+    #                # find the min distance between det and kalman prediction
+    #                #when kalman is available 
+    #                if particle_List[j].kalman_ok:
+    #                    if calculateDistance(current_position,particle_List[j].position_prediction) < Distance_k2h:
+    #                        Distance_k2h=calculateDistance(current_position,particle_List[j].position_prediction) 
+    #                        particle_List[j].hog_bbox = copy.deepcopy(bbox)
+    #                        particle_List[j].index_k2h = copy.deepcopy(i) 
+    #                        hog_new[i]==j
+    #            if Distance_k2h < CostOfNonAssignment:#case 3
+    #                particle_List[hog_new[i]].case = 3
+    #            
+    #            else:
+    #                hog_new[i]=-1#case 0
+                    
+         
+>>>>>>> Stashed changes
         '''
         Check if results conflicted
         get distance between tracking and hog
