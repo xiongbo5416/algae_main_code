@@ -6,7 +6,6 @@ Created on Wed Jun  5 10:44:28 2019
 """
 from particle_class import particle
 import cv2
-import dlib
 import numpy as np
 import glob
 import os
@@ -64,7 +63,6 @@ def check_overlap_bbox(bbox_1 , bbox_2):
 #reading and configuartion
 PATH='C:/Users/xiong/OneDrive - McMaster University/Data and files/algae_project/0514/'
 FOLDER_name= '6_5'
-detector = dlib.simple_object_detector("detector.svm")
 D_THOR=20
 
 
@@ -91,8 +89,6 @@ num_bead=0
 num_detected = 0
 
 
-<<<<<<< Updated upstream
-=======
 #sliding windows config
 STRIDE_WINDOW=16
 WIDE_WINDOW=4*16
@@ -112,7 +108,6 @@ hog_descriptors = []
 # Now create a new SVM & load the model:
 filename = 'finalized_model.sav'
 model = pickle.load(open(filename, 'rb'))
->>>>>>> Stashed changes
 
     
 for f in glob.glob(os.path.join(PATH + FOLDER_name, "*.jpg")):
@@ -155,7 +150,6 @@ for f in glob.glob(os.path.join(PATH + FOLDER_name, "*.jpg")):
                 for i in range(frame_num-last_frame_num):
                     current_prediction = particle_List[j].kalman.predict()
                 particle_List[j].save_prediction(current_prediction)
-<<<<<<< Updated upstream
                 p1 = (int(current_prediction[0]-50), int(current_prediction[1]-50))
                 p2 = (int(current_prediction[0]+50), int(current_prediction[1]+50))
                 '''
@@ -173,7 +167,6 @@ for f in glob.glob(os.path.join(PATH + FOLDER_name, "*.jpg")):
                             num_algae = num_algae+1
                         if type_tem == 'PS_bead':
                             num_bead = num_bead + 1
-=======
                 #correct position with prediction
                 particle_List[j].save_position(frame_num, particle_List[j].position_prediction)
                 
@@ -289,7 +282,6 @@ for f in glob.glob(os.path.join(PATH + FOLDER_name, "*.jpg")):
         '''
         detect particles with hog in img
         '''
->>>>>>> Stashed changes
     
         #label particles
         for j in range(num_particle):
@@ -359,9 +351,7 @@ for f in glob.glob(os.path.join(PATH + FOLDER_name, "*.jpg")):
             particle_List[j].distance_k2t=calculateDistance(current_prediction,[particle_List[j].position_x[-1],particle_List[j].position_y[-1]])
             #cv2.circle(img_gray,(current_prediction[0],current_prediction[1]), 25, 255, 1)
         
-        
-<<<<<<< Updated upstream
-=======
+
         #get cost_matrix using prediction, the distance square between prediction and detection
         cost_matrix_predict = np.zeros((len(contours),num_particle))+10000
         for j in range(num_particle):
@@ -533,8 +523,7 @@ for f in glob.glob(os.path.join(PATH + FOLDER_name, "*.jpg")):
     #            else:
     #                hog_new[i]=-1#case 0
                     
-         
->>>>>>> Stashed changes
+
         '''
         Check if results conflicted
         get distance between tracking and hog
