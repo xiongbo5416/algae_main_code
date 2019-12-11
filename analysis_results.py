@@ -30,12 +30,12 @@ data_fl=pd.DataFrame([], columns = ['fl_img','dimension','length','width','avera
 # loops for each particles
 # remove not realiable data
 # process fl_sub image data
-for i in range(200):
-    PN_data=data.loc[data['PN']==i+1]
+for i in range(1):
+    PN_data=data.loc[data['PN']==3]
     
     #filterout not reliable data
-    PN_data=PN_data.loc[PN_data['location_y']<1100]
-    
+#    PN_data=PN_data.loc[PN_data['location_y']<1200]
+#    img=PN_data.loc[334,'fl_subimage']
     #process fl_subimage
     PN_data_fl = pd.DataFrame([], columns = ['fl_img','dimension','length','width','average','peak','total','position_x','position_y']) 
     PN_data_fl['fl_img']=PN_data.loc[PN_data['lensf']==0]['fl_subimage']

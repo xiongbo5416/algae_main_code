@@ -83,8 +83,10 @@ root.withdraw()
 STRIDE_WINDOW=16
 WIDE_WINDOW=4*16
 HEIGHT_WINDOW=4*16
+#compress in the y direction.
+RATIO_HEIGHT=1.3
 num_w_wide=int((1640-WIDE_WINDOW)/STRIDE_WINDOW+1)
-num_w_height=int((1232-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
+num_w_height=int((1232/RATIO_HEIGHT-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
 windows_A=np.zeros((num_w_height,num_w_wide,HEIGHT_WINDOW,WIDE_WINDOW),dtype=np.uint8)
 
 
@@ -99,10 +101,15 @@ labels_train=[]
 
 images_folder = filedialog.askdirectory()
 for f in glob.glob(os.path.join(images_folder, "*.bmp")):
-    if f[-9:] != 'label.bmp':
+    ##if it is raw image
+    if f[-8:-4] != 'Copy':
         img=cv2.imread(f)
-        img=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.GaussianBlur(img,(3,3),0)
+        
+        #contrast enhance
+        CONTRAST_EH=2
+        img=cv2.multiply(img-128+int(128/CONTRAST_EH),CONTRAST_EH)
+        #correct img in height direction
+        img = cv2.resize(img, (1640,int(1232/RATIO_HEIGHT)), interpolation = cv2.INTER_AREA)
         print(f[:-4] )
         
         '''
@@ -117,12 +124,13 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
         mask_window_uncertain=np.zeros((num_w_height+10,num_w_wide+10),np.uint8)
         mask_window_no=np.zeros((num_w_height+10,num_w_wide+10),np.uint8)
         mask_window_random=np.random.rand(num_w_height+10,num_w_wide+10)
-        mask_window_random=mask_window_random+0.5
+        mask_window_random=mask_window_random+0.5 #(1-x) windows will be in the training sample
         mask_window_random=mask_window_random.astype(np.uint8)
         
         #read label imag
-        f_2 = f[0:-4]+'label.bmp'
+        f_2 = f[0:-4]+' - Copy.bmp'
         img_label=cv2.imread(f_2)
+        img_label = cv2.resize(img_label, (1640,int(1232/RATIO_HEIGHT)), interpolation = cv2.INTER_AREA)
         img_label_r=img_label[:,:,2]
         img_label_g=img_label[:,:,1]
         img_label_b=img_label[:,:,0]
@@ -135,7 +143,7 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
         mask_yes=cv2.bitwise_and(thresh1, thresh1, mask=thresh2)
         #using contours to get location of center point and save its location
         location_yes=[]
-        image, contours, hierarchy = cv2.findContours(mask_yes,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(mask_yes,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         for k in range(len(contours)):
             #find center position of each contour
             box_ps = contours2box_ps(contours[k])
@@ -150,13 +158,13 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
             mask_window_yes[temp_h,temp_w]=1
             
         '''
-        get blue dot which refer to uncertain label
+        get white dot which refer to uncertain label
         '''
-        ret,thresh1 = cv2.threshold(img_label_b,230,255,cv2.THRESH_BINARY)
-        ret,thresh2 = cv2.threshold(img_label_g,20,255,cv2.THRESH_BINARY_INV)
+        ret,thresh1 = cv2.threshold(img_label_b,210,255,cv2.THRESH_BINARY)
+        ret,thresh2 = cv2.threshold(img_label_g,210,255,cv2.THRESH_BINARY)
         mask_uncertain=cv2.bitwise_and(thresh1, thresh1, mask=thresh2)
         location_uncertain=[]
-        image, contours, hierarchy = cv2.findContours(mask_uncertain,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(mask_uncertain,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         for k in range(len(contours)):
             #find center position of each contour
             box_ps = contours2box_ps(contours[k])

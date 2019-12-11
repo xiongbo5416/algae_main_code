@@ -234,7 +234,7 @@ if len(videoname) >0:
     
     #######################parameter init
     #Moving average used to got bgd. N_MOVING is a how many frames used in moving average.
-    CONTRAST_EH=1
+    CONTRAST_EH=2
     N_MOVING=60
     bgd=np.zeros((ROL_NUM,COL_NUM,N_MOVING)) #save N_MOVING frames
     bgd_name=[] #save the frame number of N_MOVING frames
@@ -311,7 +311,7 @@ print('lenfree video done')
 if len(videoname2) >0:
     ##init
     current_frame=10000
-    CONTRAST_EH_FL=10
+    CONTRAST_EH_FL=2
     ####################process fluorescence video
     cap=cv2.VideoCapture(videoname2)
     for period_num in All_PERIOD:
@@ -332,7 +332,7 @@ if len(videoname2) >0:
                 gray_fl=cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 
                 ###translate to size of lensfree images
-                gray_reg= alighment(COL_NUM, ROL_NUM+200, gray_fl)
+                gray_reg= alighment(COL_NUM, ROL_NUM+300, gray_fl)
                 
                 ####for a preview during video processing
                 frame_s=cv2.resize(frame,(500,500))

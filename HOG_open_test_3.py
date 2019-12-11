@@ -11,6 +11,8 @@ from tkinter import filedialog
 import pickle
 from copy import deepcopy
 
+
+
 def get_hog() : 
     winSize = (WIDE_WINDOW,HEIGHT_WINDOW)
     blockSize = (STRIDE_WINDOW,STRIDE_WINDOW)
@@ -67,18 +69,22 @@ root.withdraw()
 
 STRIDE_WINDOW=16
 WIDE_WINDOW=4*16
-HEIGHT_WINDOW=6*16
+HEIGHT_WINDOW=4*16
+
+
+RATIO_HEIGHT=1.3
 num_w_wide=int((1640-WIDE_WINDOW)/STRIDE_WINDOW+1)
-num_w_height=int((1232-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
+num_w_height=int((1232/RATIO_HEIGHT-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
 windows_A=np.zeros((num_w_height,num_w_wide,HEIGHT_WINDOW,WIDE_WINDOW),dtype=np.uint8)
 windows_label=np.zeros((num_w_height+10,num_w_wide+10),dtype=np.uint8)
-
 
 
 fig_path = filedialog.askopenfilename()
 img=cv2.imread(fig_path)
 img=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 img = cv2.GaussianBlur(img,(3,3),0)
+#correct img in height direction
+img = cv2.resize(img, (1640,int(1232/RATIO_HEIGHT)), interpolation = cv2.INTER_AREA)
 #img_2 = img[int(STRIDE_WINDOW/2):,:]
 #img_3 = img[:,STRIDE_WINDOW/2:]
 #img_4 = img[STRIDE_WINDOW/2:,STRIDE_WINDOW/2:]
@@ -107,7 +113,7 @@ windows_prediction = np.reshape(predictions, (num_w_height,num_w_wide))
 windows_prediction=windows_prediction*255
 windows_prediction=windows_prediction.astype(np.uint8)
 windows_prediction_2=deepcopy(windows_prediction)
-ret,windows_prediction = cv2.threshold(windows_prediction,140,255,cv2.THRESH_BINARY)
+ret,windows_prediction = cv2.threshold(windows_prediction,100,255,cv2.THRESH_BINARY)
 #windows_prediction = cv2.resize(windows_prediction, (num_w_wide*2,num_w_height*2), interpolation = cv2.INTER_AREA)
 
 ##for img_2
@@ -147,25 +153,31 @@ ret,windows_prediction = cv2.threshold(windows_prediction,140,255,cv2.THRESH_BIN
 #windows_prediction = cv2.erode(windows_prediction,kernel,iterations = 1)
 
 
-contour_list = []
-image, contours, hierarchy = cv2.findContours(windows_prediction,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-for k in range(len(contours)):
-    box_ps = contours2box_ps(contours[k])
-    bbox = (box_ps[0], box_ps[1], box_ps[2]-box_ps[0], box_ps[3]-box_ps[1])
-    kernel = np.ones((2,2),np.uint8)
-    if bbox[2]>4 or bbox[3]>4:
-        windows_prediction[box_ps[1]:box_ps[3]:,box_ps[0]:box_ps[2]]=cv2.erode(windows_prediction[box_ps[1]:box_ps[3]:,box_ps[0]:box_ps[2]],kernel,iterations = 1)
+#contour_list = []
+#contours, hierarchy = cv2.findContours(windows_prediction,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+#for k in range(len(contours)):
+#    box_ps = contours2box_ps(contours[k])
+#    bbox = (box_ps[0], box_ps[1], box_ps[2]-box_ps[0], box_ps[3]-box_ps[1])
+#    kernel = np.ones((2,2),np.uint8)
+#    if bbox[2]>4 or bbox[3]>4:
+#        windows_prediction[box_ps[1]:box_ps[3]:,box_ps[0]:box_ps[2]]=cv2.erode(windows_prediction[box_ps[1]:box_ps[3]:,box_ps[0]:box_ps[2]],kernel,iterations = 1)
 
-    
+
 contour_list = []
-image, contours, hierarchy = cv2.findContours(windows_prediction,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+contours, hierarchy = cv2.findContours(windows_prediction,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 for k in range(len(contours)):
     box_ps = contours2box_ps(contours[k])
     bbox = (box_ps[0], box_ps[1], box_ps[2]-box_ps[0], box_ps[3]-box_ps[1])
     [detection_x,detection_y]=bbox2point(bbox)
-    bbox = (int(detection_x*STRIDE_WINDOW),int(detection_y*STRIDE_WINDOW),WIDE_WINDOW,HEIGHT_WINDOW)
-    contour_list.append(bbox)
-    draw_bbox (img, bbox, (255,0,0),2)
+    mask_hog = np.zeros(windows_prediction.shape,np.uint8)
+    cv2.drawContours(mask_hog,contours[k],-1,255,-1)
+    windows_prediction_contour= cv2.bitwise_and(mask_hog,windows_prediction)
+#    print(windows_prediction_contour.sum())
+#    print(detection_x,detection_y)
+    if windows_prediction_contour.sum()>400:
+        bbox = (int(detection_x*STRIDE_WINDOW),int(detection_y*STRIDE_WINDOW),WIDE_WINDOW,HEIGHT_WINDOW)
+        contour_list.append(bbox)
+        draw_bbox (img, bbox, (255,0,0),2)
 
 cv2.namedWindow("output", cv2.WINDOW_NORMAL)
 cv2.imshow('output',windows_prediction_2)

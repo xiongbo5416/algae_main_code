@@ -144,6 +144,9 @@ class particle:
             self.speed[1]=0
         return self.speed
     
+    #return the speed
+    def speed_update(self):      
+        return self.speed
     
     
     #predict the position of this object in a frame with a number of frame_num
