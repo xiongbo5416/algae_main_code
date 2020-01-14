@@ -81,9 +81,20 @@ if len(videoname) or len(videoname2)>0:
     foldername = filedialog.askdirectory()
     print(foldername)
 
-# selected a saved dpfile
+
+#########when the dataframe that saving index has been processed
 if dpname[-2:] == '.p':
+    ###read the saved dataframe that contain processed index
     df_output =pickle.load( open( dpname, "rb" ) )
+    
+######## when only lensfree video is going to be processed 
+elif len(videoname2)==0:
+    ##read lensfree data
+    results = pickle.load( open( "frames_index.p", "rb" ) )
+    df = pd.DataFrame(results, columns = ['lensf_st', 'lensf_end']) 
+    df_2 = pd.DataFrame(results, columns = ['lensf_st_out', 'lensf_end_out']) 
+    df_output = pd.concat([df, df_2], axis=1)
+    
 else:#select a video name when no dpfile saved
     results = pickle.load( open( "frames_index.p", "rb" ) )
     
@@ -234,7 +245,7 @@ if len(videoname) >0:
     
     #######################parameter init
     #Moving average used to got bgd. N_MOVING is a how many frames used in moving average.
-    CONTRAST_EH=2
+    CONTRAST_EH=1
     N_MOVING=60
     bgd=np.zeros((ROL_NUM,COL_NUM,N_MOVING)) #save N_MOVING frames
     bgd_name=[] #save the frame number of N_MOVING frames
@@ -311,7 +322,7 @@ print('lenfree video done')
 if len(videoname2) >0:
     ##init
     current_frame=10000
-    CONTRAST_EH_FL=2
+    CONTRAST_EH_FL=1
     ####################process fluorescence video
     cap=cv2.VideoCapture(videoname2)
     for period_num in All_PERIOD:

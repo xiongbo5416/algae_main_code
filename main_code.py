@@ -66,6 +66,10 @@ def create_new_particle(bbox, img_gray, p_List, frame_num):
     #init tracker
     particle_a.tracker_create() 
     ok = particle_a.tracker.init(img_gray, bbox)
+    if not ok:
+        print(frame_num)
+        print(bbox)
+        
     #save position of object
     particle_a.get_save_position(frame_num, bbox)
     #add this particles into the list
@@ -131,7 +135,7 @@ root.withdraw()
 images_folder = filedialog.askdirectory()
 D_THOR=20
 
-CONTRAST_EH=2
+CONTRAST_EH=1
 
 #initial 
 frame_count=0
@@ -174,6 +178,10 @@ num_w_wide=int((1640-WIDE_WINDOW)/STRIDE_WINDOW+1)
 num_w_height=int((1232/RATIO_HEIGHT-HEIGHT_WINDOW)/STRIDE_WINDOW+1)
 windows_A=np.zeros((num_w_height,num_w_wide,HEIGHT_WINDOW,WIDE_WINDOW),dtype=np.uint8)
 windows_label=np.zeros((num_w_height+10,num_w_wide+10),dtype=np.uint8)
+
+#size of saved subimage
+WIDE_SUBIMG=WIDE_WINDOW*1.5
+HEIGHT_SUBIMG=HEIGHT_WINDOW*1.5
 
 CostOfNonAssignment=STRIDE_WINDOW*STRIDE_WINDOW*6
 CostOfNonPerfect=CostOfNonAssignment/5
@@ -376,7 +384,7 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
         windows_prediction=windows_prediction*255
         windows_prediction=windows_prediction.astype(np.uint8)
         #windows_prediction_2=deepcopy(windows_prediction)
-        ret,windows_prediction = cv2.threshold(windows_prediction,140,255,cv2.THRESH_BINARY)    
+        ret,windows_prediction_bool = cv2.threshold(windows_prediction,128,255,cv2.THRESH_BINARY)    
     
         #find overlap hod detection. And reduce overlap section using     
     #    contour_list = []
@@ -389,9 +397,11 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
     #            windows_prediction[box_ps[1]:box_ps[3]:,box_ps[0]:box_ps[2]]=cv2.erode(windows_prediction[box_ps[1]:box_ps[3]:,box_ps[0]:box_ps[2]],kernel,iterations = 1)
     
     
-        # save HOG results to contour_list
+        # save HOG results (image related) to contour_list
         contour_list = []
-        contours, hierarchy = cv2.findContours(windows_prediction,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        # save HOG results (prob related ) to prob_list
+        prob_list = []
+        contours, hierarchy = cv2.findContours(windows_prediction_bool,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         for k in range(len(contours)):
             box_ps = contours2box_ps(contours[k])
             bbox = (box_ps[0], box_ps[1], box_ps[2]-box_ps[0], box_ps[3]-box_ps[1])
@@ -404,9 +414,9 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
             if windows_prediction_contour.sum()>320:
                 bbox = (int(detection_x*STRIDE_WINDOW),int(detection_y*STRIDE_WINDOW),WIDE_WINDOW,HEIGHT_WINDOW)
                 contour_list.append(bbox)
+                prob_list.append(windows_prediction_contour.sum)
                 draw_bbox (img_gray_draw, bbox, 255)
-        hog_fake=np.zeros(len(contour_list),int)
-                
+        hog_fake=np.zeros(len(contour_list),int)                
                 
         #update tracking and update kalman prediction
         num_particle=len(particle_List)
@@ -418,8 +428,8 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
             '''
             particle_List[j].tracker_update(img_gray,frame_num)#update tracker
             #draw tracking bbox
-           # draw_bbox (img_gray, particle_List[j].bbox, 0)
-            #cv2.putText(img_gray, str(j),tuple([particle_List[j].position_x[-1],particle_List[j].position_y[-1]]), font, 1, (255), 1, cv2.LINE_AA)
+#            draw_bbox (img_gray_draw, particle_List[j].bbox, 0)
+#            cv2.putText(img_gray_draw, str(j),tuple([particle_List[j].position_x[-1],particle_List[j].position_y[-1]]), font, 1, (255), 1, cv2.LINE_AA)
         # remove the bad tracking.     
         # if movement is more than thorshold, set positon to -100,-100,
         for j in range(num_particle):
@@ -529,6 +539,7 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
                     cost_matrix=np.delete(cost_matrix, i-i_del, 0)
                     cost_matrix_predict=np.delete(cost_matrix_predict, i-i_del, 0)
                     del contour_list[i-i_del]
+                    del prob_list[i-i_del]
                     hog2predict = np.delete(hog2predict,i-i_del,0)
                     hog2track = np.delete(hog2track,i-i_del,0)
                     i_del=i_del+1
@@ -644,7 +655,8 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
                 particle_List[j].report_found()
     #            #correct kalman filter 
                 current_position[0],current_position[1]= bbox2point(particle_List[j].bbox)       
-                particle_List[j].kalman.correct(current_position)     
+                particle_List[j].kalman.correct(current_position)
+                
     #           set number detected
                 if particle_List[j].appear>5:
                     ok = particle_List[j].assign_PN (num_detected)
@@ -734,16 +746,16 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
                 particle_List[j].speed_update()
                 speed_temp=copy.deepcopy(particle_List[j].speed)
                 #get the sub_image that need to be saved
-                sub_image = point2bbox_image(img_gray,particle_List[j].position_x[-1],particle_List[j].position_y[-1],WIDE_WINDOW,HEIGHT_WINDOW)
+                sub_image = point2bbox_image(img_gray,particle_List[j].position_x[-1],particle_List[j].position_y[-1],WIDE_SUBIMG,HEIGHT_SUBIMG)
                 
                 #write data into pandas dataframe
                 ##pd.DataFrame['frame', 'PN', 'speed', 'location_x','location_y', 'lensf', 'lensf_subimage', 'case']) 
-                df=df.append({'frame' : frame_num ,'PN' :particle_List[j].PN, 'speed_x':speed_temp[0],'speed_y':speed_temp[1],'location_x':particle_List[j].position_x[-1], 'location_y':particle_List[j].position_y[-1], 'lensf': 1,'lensf_subimage': sub_image , 'case': particle_List[j].case, 'period_n': period_n}, ignore_index = True) 
+                df=df.append({'frame' : frame_num ,'PN' :particle_List[j].PN, 'speed_x':speed_temp[0],'speed_y':speed_temp[1],'location_x':particle_List[j].position_x[-1], 'location_y':particle_List[j].position_y[-1], 'lensf': 1,'lensf_subimage': sub_image , 'case': particle_List[j].case, 'period_n': period_n, }, ignore_index = True) 
                 
                 ##write data in excel   
                 #sheet1.write(frame_count,2*particle_List[j].PN,particle_List[j].position_x[-1])
                 #sheet1.write(frame_count,2*particle_List[j].PN+1,particle_List[j].position_y[-1])
-                cv2.circle(img_gray_draw,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), 50, 0, 3)
+                cv2.circle(img_gray_draw,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), int(WIDE_SUBIMG/2), 0, 3)
                 cv2.putText(img_gray_draw, str(particle_List[j].PN)+':'+str(particle_List[j].case), (particle_List[j].position_x[-1],particle_List[j].position_y[-1]), font, 1, (255), 1, cv2.LINE_AA)
             else:
                 if particle_List[j].kalman_ok==1:

@@ -32,7 +32,8 @@ print('select a lensfree video')
 videoname = filedialog.askopenfilename()
 print(videoname)
 
-print('select a flourescent video')
+
+print("select a flourescent video. if donnot need flourescent images, press'esc' ")
 print('if donnot process fluorescent video, click cancel')
 videoname2 = filedialog.askopenfilename()
 print(videoname2)
@@ -68,11 +69,11 @@ current_frame_fl=0
 excitation_st=0  
 RedOrNot=0
 n_moving=0
-CONTRAST_EH=3
-FL_EH=6
+#CONTRAST_EH=3
+#FL_EH=6
 NUM_COMP=1 #since lensfree images and fluorescent images are not start at same time. A compenstion is required.
 #creat a list to record the frame No. that is the first frame in each lasers toggle period
-MAX_PERIOD=10000 #this define the quatity of red laser burst
+MAX_PERIOD=200 #this define the quatity of red laser burst
 
 
 list_period = np.zeros(MAX_PERIOD,dtype=np.int32)#record the start frame No in each cycle
@@ -102,8 +103,8 @@ if len(videoname2) >0:
     
     img_cut = img_grey[bbox[1]:bbox[1]+bbox[3],bbox[0]:bbox[0]+bbox[2]]
     height, width = img_cut.shape
-    #threshold_ex = img_cut.sum()/(height * width)
-    #threshold_ex=threshold_ex/4
+    threshold_ex = img_cut.sum()/(height * width)
+    threshold_ex=threshold_ex/4/width
     print(bbox)
     
     
@@ -219,7 +220,7 @@ period_num=0
 if len(videoname2) >0:    
     #process video
     cap=cv2.VideoCapture(videoname2)
-    while current_frame_fl<current_frame:
+    while period_num<MAX_PERIOD:
         #this frame is gray_0, last frame is gray_1.always save save last frame because it is hard to detect when excitation light on/off.
         ret, frame = cap.read()
         if frame is None:
@@ -263,6 +264,7 @@ if len(videoname2) >0:
 #               print(max(fl_profile))
 
         current_frame_fl=current_frame_fl+1
+        print('fl:' + str(current_frame_fl))
         '''
         only used for experiment 0910
         '''           
@@ -342,8 +344,14 @@ if len(videoname2) >0:
 
 cap.release()
 cv2.destroyAllWindows()
-results_output=np.array([list_period, lensfr_period, fl_st, fl_period])
-results_output=results_output.T
+
+#when fl video is selected, process fl video
+if len(videoname2) >0:   
+    results_output=np.array([list_period, lensfr_period, fl_st, fl_period])
+    results_output=results_output.T
+else:
+    results_output=np.array([list_period, lensfr_period])
+    results_output=results_output.T
 
 pickle.dump( results_output, open( "frames_index.p", "wb" ) )
 

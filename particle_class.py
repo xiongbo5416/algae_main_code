@@ -240,6 +240,7 @@ class particle:
             self.get_save_position(frame_num, self.bbox)            
         # if speed is abnormal, set tracking result as negetive. As a result, tracking is regard to be failed in the following precessing. 
         if self.frame[-2]>0:
-            if abs(self.position_x[-1]-self.position_x[-2])>20 or self.position_y[-1]-self.position_y[-2] < -10:
+#            if abs(self.position_x[-1]-self.position_x[-2])>20 or self.position_y[-1]-self.position_y[-2] < -10:
+            if abs(self.position_x[-1]-self.position_x[-2])>20:
                 self.bbox=(-100,-100,-100,-100)
                 self.get_save_position(frame_num, self.bbox)

@@ -16,6 +16,8 @@ from sklearn.svm import SVC
 #import copy
 import pickle
 
+
+
 def get_hog() : 
     winSize = (WIDE_WINDOW,HEIGHT_WINDOW)
     blockSize = (STRIDE_WINDOW,STRIDE_WINDOW)
@@ -98,6 +100,8 @@ hog_descriptors = []
 labels_train=[]
 
 
+print("select the folder than contain images and label images")
+print("Note: need two or more points during labeling if a particle is too big")
 
 images_folder = filedialog.askdirectory()
 for f in glob.glob(os.path.join(images_folder, "*.bmp")):
