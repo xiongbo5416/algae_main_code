@@ -75,12 +75,12 @@ print(dpname)
 data =pickle.load( open( dpname, "rb" ))
 
 #for hog
-FL_HEIGHT=120
-FL_WIDTH=70
-THRESHOLD_FL=4
-STRIDE_WINDOW=16
-WIDE_WINDOW=4*16
-HEIGHT_WINDOW=4*16
+FL_HEIGHT=160
+FL_WIDTH=80
+THRESHOLD_FL=3
+STRIDE_WINDOW=24
+WIDE_WINDOW=4*24
+HEIGHT_WINDOW=4*24
 
 #######analyze each particles
 #logic flow

@@ -73,8 +73,10 @@ n_moving=0
 #FL_EH=6
 NUM_COMP=1 #since lensfree images and fluorescent images are not start at same time. A compenstion is required.
 #creat a list to record the frame No. that is the first frame in each lasers toggle period
-MAX_PERIOD=200 #this define the quatity of red laser burst
+MAX_PERIOD=100 #this define the quatity of red laser burst
 
+#set o to disable video showing
+video_showing=0
 
 list_period = np.zeros(MAX_PERIOD,dtype=np.int32)#record the start frame No in each cycle
 lensfr_period = np.zeros(MAX_PERIOD,dtype=np.int32)#record finish cycle in each cycle
@@ -104,7 +106,7 @@ if len(videoname2) >0:
     img_cut = img_grey[bbox[1]:bbox[1]+bbox[3],bbox[0]:bbox[0]+bbox[2]]
     height, width = img_cut.shape
     threshold_ex = img_cut.sum()/(height * width)
-    threshold_ex=threshold_ex/4/width
+    threshold_ex=threshold_ex/3
     print(bbox)
     
     
@@ -121,9 +123,13 @@ while period_num<MAX_PERIOD:
     #print(str(current_frame) + ',' , end =" ")
     
     #frame = cv2.blur(frame,(3,3))
-    #create a small frame for display
-    frame_s=cv2.resize(frame,(500,500))
-    gray_s = cv2.cvtColor(frame_s, cv2.COLOR_BGR2GRAY)
+    
+    if video_showing==1:
+        #create a small frame for display
+        frame_s=cv2.resize(frame,(500,500))
+        gray_s = cv2.cvtColor(frame_s, cv2.COLOR_BGR2GRAY)
+        #    show images
+        cv2.imshow('grey',gray_s)
     
     #obtained blue channel of the present frame 
     blue = np.array(frame[:, :, 0])
@@ -135,8 +141,7 @@ while period_num<MAX_PERIOD:
     #grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     grey = green
     #grey = cv2.fastNlMeansDenoising(grey,5 ,7,21)
-#    show images
-    cv2.imshow('grey',gray_s)
+
     
     #blue_profile=sum(blue_float.T)
     #blue_profile=blue_profile/COL_NUM
@@ -151,7 +156,7 @@ while period_num<MAX_PERIOD:
     #print(max(grey_profile))
     
     #red laser is off
-    if  max(grey_profile)>250 or min(grey_profile)<20:
+    if  max(grey_profile)>245 or min(grey_profile)<20:
         RedOrNot=0
     
     # red laser just turn on. the first frame in this cycle
@@ -239,6 +244,13 @@ if len(videoname2) >0:
         fl_profile=fl_profile/bbox[2]
         #print(max(fl_profile))
         
+        if video_showing==1:
+            #create a small frame for display
+            frame_s=cv2.resize(frame,(500,500))
+            gray_s = cv2.cvtColor(frame_s, cv2.COLOR_BGR2GRAY)
+            #    show images
+            cv2.imshow('grey',gray_s)
+    
         
         #blue light is off
         if max(fl_profile)< threshold_ex:
@@ -341,6 +353,9 @@ if len(videoname2) >0:
            
         current_frame_fl=current_frame_fl+1
         '''
+        #press "Q" on the keyboard to quit
+        if cv2. waitKey(1)& 0xFF == ord('q'):
+            break 
 
 cap.release()
 cv2.destroyAllWindows()

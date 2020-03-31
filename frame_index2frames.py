@@ -33,14 +33,14 @@ def alighment(width, height,gray):
 #    points2[1]=(251.0,783.5)
 #    points2[2]=(978.5,204.5)
 #    points2[3]=(189.0,149.0)
-    points1[0]=(978.0,1142.0)
-    points1[1]=(1035.5,671.5)
-    points1[2]=(703.0,322.5)
-    points1[3]=(350.5,630.5)
-    points2[0]=(723.0,1029.0)
-    points2[1]=(772.5,680.5)
-    points2[2]=(524.5,420.5)
-    points2[3]=(255.0,644.0)
+    points1[0]=(717.5,608.0)
+    points1[1]=(501.0,366.0)
+    points1[2]=(983.0,308.5)
+    points1[3]=(504.0,227.0)
+    points2[0]=(423.0,524.5)
+    points2[1]=(264.0,330.5)
+    points2[2]=(626.5,306.5)
+    points2[3]=(265.5,225.5)
     h, mask = cv2.findHomography(points2, points1, cv2.RANSAC)
     gray_reg = cv2.warpPerspective(gray, h, (width, height))
     #gray_reg =gray
@@ -120,10 +120,15 @@ else:#select a video name when no dpfile saved
     #df =df.dropna(axis=0, how='any')
     
     ################modify error mannually to make two video alignment
-    #df.loc[787, 'fl_st_diff'] = 100
+#    df.loc[1820, 'lensf_st_diff'] = 14
     #df.loc[849, 'fl_st_diff'] = 100
-#    df.loc[77, 'fl_st_diff'] = 100
-#    df.loc[78, 'fl_st_diff'] = 100
+#    df.loc[67, 'fl_st_diff'] = 100
+#    df.loc[119, 'fl_st_diff'] = 100
+#    df.loc[2517, 'lensf_st_diff'] = 100
+#    df.loc[982, 'fl_st_diff'] = 100
+#    df.loc[1034, 'fl_st_diff'] = 100
+#    df.loc[1088, 'fl_st_diff'] = 100
+#    df.loc[1140, 'fl_st_diff'] = 100
 #    df.loc[79, 'fl_st_diff'] = 100
 
     
@@ -228,10 +233,10 @@ else:#select a video name when no dpfile saved
     print('Lensf:',df_error_lensf.index.values)
     
     pickle.dump( df_output, open(dpname[0:-5]+".p", "wb" ) )
-
+    
 
 ###################process lensfree images
-if len(videoname) >0:
+if len(videoname) >0 and len(foldername)>0:
     ####################read first frame of video to get size of video
     cap=cv2.VideoCapture(videoname)
     ret, frame = cap.read()
@@ -246,16 +251,19 @@ if len(videoname) >0:
     #######################parameter init
     #Moving average used to got bgd. N_MOVING is a how many frames used in moving average.
     CONTRAST_EH=1
-    N_MOVING=60
+    N_MOVING=40
     bgd=np.zeros((ROL_NUM,COL_NUM,N_MOVING)) #save N_MOVING frames
     bgd_name=[] #save the frame number of N_MOVING frames
     i_MOVING=0
     period_num=0
     #MAX_PERIOD = max(df_output.index.values.astype(int))
     All_PERIOD = df_output.index.values
-#    All_PERIOD = All_PERIOD[760:880]
-    #All_PERIOD = All_PERIOD[:75]
+#    All_PERIOD = np.append(All_PERIOD[1950:2100],All_PERIOD[3275:3360])
+#    All_PERIOD = np.append(All_PERIOD[1270:1505],All_PERIOD[1810:1855])
+    All_PERIOD = All_PERIOD[0:10]
+#    All_PERIOD = All_PERIOD[:188]
     current_frame=10000
+    
     
     ####################process lensfree video
     cap=cv2.VideoCapture(videoname)
@@ -278,9 +286,9 @@ if len(videoname) >0:
             while current_frame < df_output.iloc[period_num]['lensf_end']+1:
                 ret, frame = cap.read()
                 #for a preview during video processing
-                frame_s=cv2.resize(frame,(500,500))
-                gray_s = cv2.cvtColor(frame_s, cv2.COLOR_BGR2GRAY)
-                cv2.imshow('preview',gray_s)
+#                frame_s=cv2.resize(frame,(500,500))
+#                gray_s = cv2.cvtColor(frame_s, cv2.COLOR_BGR2GRAY)
+#                cv2.imshow('preview',gray_s)
                 
                 #
                 gray =np.array(frame[:, :, 1]) #use green channel     
@@ -313,13 +321,13 @@ if len(videoname) >0:
         #press "Q" on the keyboard to quit
         if cv2. waitKey(1)& 0xFF == ord('q'):
             break    
-cap.release()
-cv2.destroyAllWindows()
-print('lenfree video done')
+    cap.release()
+    cv2.destroyAllWindows()
+    print('lenfree video done')
     
     
 ###################process fluorescence images
-if len(videoname2) >0:
+if len(videoname2) >0 and len(foldername)>0:
     ##init
     current_frame=10000
     CONTRAST_EH_FL=1
@@ -346,9 +354,9 @@ if len(videoname2) >0:
                 gray_reg= alighment(COL_NUM, ROL_NUM+300, gray_fl)
                 
                 ####for a preview during video processing
-                frame_s=cv2.resize(frame,(500,500))
-                gray_s = cv2.cvtColor(frame_s, cv2.COLOR_BGR2GRAY)
-                cv2.imshow('preview',gray_s)
+#                frame_s=cv2.resize(frame,(500,500))
+#                gray_s = cv2.cvtColor(frame_s, cv2.COLOR_BGR2GRAY)
+#                cv2.imshow('preview',gray_s)
                 
                 #save  frames
                 name = foldername +'/' +str(current_frame+ frame_compensate) +'f.bmp'
@@ -357,9 +365,9 @@ if len(videoname2) >0:
                 current_frame=current_frame+1
                 
         #press "Q" on the keyboard to quit
-        if cv2. waitKey(1)& 0xFF == ord('q'):
+        if cv2. waitKey(0)& 0xFF == ord('q'):
             break    
-cap.release()
-cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()
     
 

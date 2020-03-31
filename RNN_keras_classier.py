@@ -16,6 +16,10 @@ import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
 
+####obtain dataframe to labels
+#A is a dataframe
+#ST and END are range (from 0 to 1)
+#LABEL are label. int
 def get_RNN_feature_label(A,ST,END,LABEL):
     max_PN=A['PN'].max(axis = 0, skipna = True)
     features_out = []

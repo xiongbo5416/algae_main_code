@@ -239,8 +239,8 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
         
         for j in range(num_particle):      
             #get the particle positon in the fluorescent images
-            x_fl=int(particle_List[j].position_x[-1])
-            y_fl=int(particle_List[j].position_y[-1]*RATIO_HEIGHT + 65)
+            x_fl=int(particle_List[j].position_x[-1]+10)
+            y_fl=int(particle_List[j].position_y[-1]*RATIO_HEIGHT + 40)
             
             #kill this particle if it has move out the lensfree video
             if y_fl-65>1232:
@@ -253,7 +253,7 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
                 speed_temp=copy.deepcopy(particle_List[j].speed)
                 
                 #get the sub_image that need to be saved
-                sub_image = point2bbox_image(img_gray,x_fl,y_fl, 70, 120)
+                sub_image = point2bbox_image(img_gray,x_fl,y_fl, 80, 160)
                 
                 #write data into pandas dataframe
                 ##pd.DataFrame['frame', 'PN', 'speed', 'location_x','location_y', 'lensf', 'lensf_subimage', 'case']) 
@@ -262,9 +262,9 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
                 ##write data in excel   
                 #sheet1.write(frame_count,2*particle_List[j].PN,particle_List[j].position_x[-1])
                 #sheet1.write(frame_count,2*particle_List[j].PN+1,particle_List[j].position_y[-1])
-                cv2.circle(img_gray_draw,(x_fl,y_fl), 60, 128, 3)
-                cv2.circle(img_gray_draw,(x_fl,y_fl), 35, 128, 3)
-                cv2.putText(img_gray_draw, str(particle_List[j].PN), (x_fl,y_fl), font, 1, (128), 1, cv2.LINE_AA)
+                cv2.circle(img_gray_draw,(x_fl,y_fl), 70, 255, 2)
+#                cv2.circle(img_gray_draw,(x_fl,y_fl), 40, 128, 3)
+#                cv2.putText(img_gray_draw, str(particle_List[j].PN), (x_fl,y_fl), font, 1, (128), 1, cv2.LINE_AA)
             else:
                 if particle_List[j].kalman_ok==1:
                     cv2.circle(img_gray_draw,(x_fl,y_fl), 20, 128, 1)
@@ -415,7 +415,8 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
                 bbox = (int(detection_x*STRIDE_WINDOW),int(detection_y*STRIDE_WINDOW),WIDE_WINDOW,HEIGHT_WINDOW)
                 contour_list.append(bbox)
                 prob_list.append(windows_prediction_contour.sum)
-                draw_bbox (img_gray_draw, bbox, 255)
+                #draw box for a particle detected by hog
+#                draw_bbox (img_gray_draw, bbox, 255)
         hog_fake=np.zeros(len(contour_list),int)                
                 
         #update tracking and update kalman prediction
@@ -755,11 +756,11 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
                 ##write data in excel   
                 #sheet1.write(frame_count,2*particle_List[j].PN,particle_List[j].position_x[-1])
                 #sheet1.write(frame_count,2*particle_List[j].PN+1,particle_List[j].position_y[-1])
-                cv2.circle(img_gray_draw,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), int(WIDE_SUBIMG/2), 0, 3)
-                cv2.putText(img_gray_draw, str(particle_List[j].PN)+':'+str(particle_List[j].case), (particle_List[j].position_x[-1],particle_List[j].position_y[-1]), font, 1, (255), 1, cv2.LINE_AA)
-            else:
-                if particle_List[j].kalman_ok==1:
-                    cv2.circle(img_gray_draw,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), 40, 0, 1)
+                cv2.circle(img_gray_draw,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), int(50), 255, 2)
+#                cv2.putText(img_gray_draw, str(particle_List[j].PN)+':'+str(particle_List[j].case), (particle_List[j].position_x[-1],particle_List[j].position_y[-1]), font, 1, (255), 1, cv2.LINE_AA)
+#            else:
+#                if particle_List[j].kalman_ok==1:
+#                    cv2.circle(img_gray_draw,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), 40, 0, 1)
                 
                 
                 

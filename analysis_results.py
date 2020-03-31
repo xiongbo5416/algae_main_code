@@ -43,9 +43,9 @@ print('select a dp file')
 dpname = filedialog.askopenfilename()
 print(dpname)
 
-FL_HEIGHT=120
-FL_WIDTH=70
-THRESHOLD_FL=4
+FL_HEIGHT=160
+FL_WIDTH=80
+THRESHOLD_FL=3
 STRIDE_WINDOW=16
 WIDE_WINDOW=4*16
 HEIGHT_WINDOW=4*16
@@ -215,6 +215,9 @@ for h in h_index:
     if img_temp.shape[0] != 1:
         #get and save hog
         hog = get_hog()
+        #resize img to 64x64. 64x64 is big enough
+        img_temp=img_temp[16:-16,16:-16]
+        
         descriptor = hog.compute(img_temp,(STRIDE_WINDOW,STRIDE_WINDOW),(0,0)) 
         descriptor=descriptor[:,0]
         descriptor = descriptor.ravel() 
