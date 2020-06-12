@@ -211,7 +211,7 @@ for i in PN_INDEX:
             ###########find the overlap area that has the biggest area. this area could be a result of tracked particles
             ret,mask_temp = cv2.threshold(mask_overlap,len(h_index)-1,1,cv2.THRESH_BINARY)         
             #get the roughly area of the target particle in a fl image
-            contours, hierarchy = cv2.findContours(mask_temp,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+            t, contours, hierarchy = cv2.findContours(mask_temp,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
             max_area=-1
             #get the positon of integration that has the largest area
             for c in contours:
@@ -223,7 +223,7 @@ for i in PN_INDEX:
                     
             ##########generate a mask that can enable the useful information in each fl imgs
             if max_area>-1:
-                contours_2, hierarchy = cv2.findContours(mask_overlap,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+                t, contours_2, hierarchy = cv2.findContours(mask_overlap,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
                 k=0
                 for c in contours_2:
                     if max(c[:,0,0])>x_target and min(c[:,0,0])<x_target:
@@ -248,7 +248,7 @@ for i in PN_INDEX:
                 img_temp  = cv2.bitwise_and(img_temp ,img_temp ,mask = mask_edge)
                 
                 #find the particle
-                contours_3, hierarchy = cv2.findContours(img_temp,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+                t, contours_3, hierarchy = cv2.findContours(img_temp,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
                 #find the max contours in contours_3
                 area_max=-1
                 for c in contours_3:

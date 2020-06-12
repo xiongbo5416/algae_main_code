@@ -76,7 +76,7 @@ NUM_COMP=1 #since lensfree images and fluorescent images are not start at same t
 MAX_PERIOD=100 #this define the quatity of red laser burst
 
 #set o to disable video showing
-video_showing=0
+video_showing=1
 
 list_period = np.zeros(MAX_PERIOD,dtype=np.int32)#record the start frame No in each cycle
 lensfr_period = np.zeros(MAX_PERIOD,dtype=np.int32)#record finish cycle in each cycle

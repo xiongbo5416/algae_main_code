@@ -47,6 +47,10 @@ class particle:
       #0 is unknow 
       #1 is beam
       #2 is algae
+      self.lenf_predict=[]
+      self.fl_predict=[]
+      
+      
       
       
     def assign_PN (self,num):

@@ -265,10 +265,14 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
                 cv2.circle(img_gray_draw,(x_fl,y_fl), 70, 255, 2)
 #                cv2.circle(img_gray_draw,(x_fl,y_fl), 40, 128, 3)
 #                cv2.putText(img_gray_draw, str(particle_List[j].PN), (x_fl,y_fl), font, 1, (128), 1, cv2.LINE_AA)
-            else:
-                if particle_List[j].kalman_ok==1:
-                    cv2.circle(img_gray_draw,(x_fl,y_fl), 20, 128, 1)
-        
+            # else:
+            #     if particle_List[j].kalman_ok==1:
+            #         cv2.circle(img_gray_draw,(x_fl,y_fl), 20, 128, 1)
+            
+            #cut gray_draw
+            img_gray_draw=img_gray_draw[40:40+1232,:]
+            #img_gray_draw=cv2.resize(img_gray_draw, (1640,int(1232/RATIO_HEIGHT)), interpolation = cv2.INTER_AREA)
+            
     ######## process lensfree images
     if not f[-5]=='f':
         #count period number
@@ -401,7 +405,7 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
         contour_list = []
         # save HOG results (prob related ) to prob_list
         prob_list = []
-        contours, hierarchy = cv2.findContours(windows_prediction_bool,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        h1,contours,h2 = cv2.findContours(windows_prediction_bool,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         for k in range(len(contours)):
             box_ps = contours2box_ps(contours[k])
             bbox = (box_ps[0], box_ps[1], box_ps[2]-box_ps[0], box_ps[3]-box_ps[1])
@@ -756,7 +760,7 @@ for f in glob.glob(os.path.join(images_folder, "*.bmp")):
                 ##write data in excel   
                 #sheet1.write(frame_count,2*particle_List[j].PN,particle_List[j].position_x[-1])
                 #sheet1.write(frame_count,2*particle_List[j].PN+1,particle_List[j].position_y[-1])
-                cv2.circle(img_gray_draw,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), int(50), 255, 2)
+                cv2.circle(img_gray_draw,(particle_List[j].position_x[-1],particle_List[j].position_y[-1]), int(60), 255, 2)
 #                cv2.putText(img_gray_draw, str(particle_List[j].PN)+':'+str(particle_List[j].case), (particle_List[j].position_x[-1],particle_List[j].position_y[-1]), font, 1, (255), 1, cv2.LINE_AA)
 #            else:
 #                if particle_List[j].kalman_ok==1:
